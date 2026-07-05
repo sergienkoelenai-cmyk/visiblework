@@ -153,33 +153,36 @@ export default function TaskForm({ task = null, categories = [], onSave, onCance
           />
         </label>
 
-        {/* Category */}
-        <label className="task-form__label">
-          Category
-          <select className="task-form__select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Select category…</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.emoji} {cat.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Category & Price Row */}
+        <div className="task-form__row">
+          {/* Category */}
+          <label className="task-form__label">
+            Category
+            <select className="task-form__select" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">Select category…</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.emoji} {cat.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {/* Price */}
-        <label className="task-form__label">
-          Price (€)
-          <input
-            className={`task-form__input ${errors.price ? 'task-form__input--error' : ''}`}
-            type="number"
-            min="0"
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0.00"
-          />
-          {errors.price && <span className="task-form__error">{errors.price}</span>}
-        </label>
+          {/* Price */}
+          <label className="task-form__label">
+            Price (€)
+            <input
+              className={`task-form__input ${errors.price ? 'task-form__input--error' : ''}`}
+              type="number"
+              min="0"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0.00"
+            />
+            {errors.price && <span className="task-form__error">{errors.price}</span>}
+          </label>
+        </div>
 
         {/* Task type toggle */}
         <div className="task-form__toggle-group">
