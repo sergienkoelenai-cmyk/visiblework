@@ -10,6 +10,10 @@ import CashoutDialog from './components/CashoutDialog'
 import SettingsPage from './components/SettingsPage'
 import UserForm from './components/UserForm'
 
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from './data/firebase'
+import Login from './components/Login'
+
 const CATEGORIES = [
   { id: 'cleaning', label: 'Cleaning', emoji: '🧹' },
   { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
@@ -25,7 +29,11 @@ const CATEGORIES = [
 ]
 
 function App() {
-  // --- State ---
+  // --- Auth State ---
+  const [currentUser, setCurrentUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // --- Data State ---
   const [users, setUsers] = useState([])
   const [tasks, setTasks] = useState([])
   const [completions, setCompletions] = useState([])
@@ -39,8 +47,19 @@ function App() {
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
 
+  // --- Auth subscription ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user)
+      setAuthLoading(false)
+    })
+    return unsubscribe
+  }, [])
+
   // --- Real-time subscriptions ---
   useEffect(() => {
+    if (!currentUser) return
+
     const unsubUsers = subscribeToUsers((updatedUsers) => {
       setUsers(updatedUsers)
     })
@@ -52,14 +71,14 @@ function App() {
       unsubUsers()
       unsubTasks()
     }
-  }, [])
+  }, [currentUser])
 
   // Load completions when going to settings
   useEffect(() => {
-    if (page === 'settings') {
+    if (page === 'settings' && currentUser) {
       getCompletions(100).then(setCompletions)
     }
-  }, [page])
+  }, [page, currentUser])
 
   // --- Derived data ---
   const activeTasks = tasks.filter(t => t.isActive)
@@ -135,6 +154,28 @@ function App() {
   }, [])
 
   // --- Render ---
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'var(--color-bg)',
+        color: 'var(--color-text-secondary)',
+        fontSize: '18px',
+        fontWeight: 600,
+        fontFamily: 'var(--font-family)',
+      }}>
+        Loading VisibleWork...
+      </div>
+    )
+  }
+
+  if (!currentUser) {
+    return <Login />
+  }
+
   if (page === 'settings') {
     return (
       <div className="app">
@@ -148,6 +189,7 @@ function App() {
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
           onCashout={(user) => setCashoutUser(user)}
+          onSignOut={() => signOut(auth)}
           onBack={() => setPage('dashboard')}
         />
 

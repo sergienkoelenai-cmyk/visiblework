@@ -42,6 +42,7 @@ export default function SettingsPage({
   onEditTask,
   onDeleteTask,
   onCashout,
+  onSignOut,
   onBack,
 }) {
   // Group tasks by category and recurrence type
@@ -89,11 +90,21 @@ export default function SettingsPage({
   return (
     <div className="settings">
       {/* Header */}
-      <header className="settings__header">
-        <button className="settings__back" onClick={onBack} type="button">
-          ← Back
+      <header className="settings__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button className="settings__back" onClick={onBack} type="button">
+            ← Back
+          </button>
+          <h1 className="settings__title">Settings</h1>
+        </div>
+        <button
+          className="btn btn-secondary"
+          onClick={onSignOut}
+          type="button"
+          style={{ minHeight: '44px' }}
+        >
+          Sign Out
         </button>
-        <h1 className="settings__title">Settings</h1>
       </header>
 
       {/* ── Family Members ── */}
