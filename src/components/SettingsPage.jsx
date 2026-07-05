@@ -44,6 +44,48 @@ export default function SettingsPage({
   onCashout,
   onBack,
 }) {
+  // Group tasks by category and recurrence type
+  const groupedTasks = React.useMemo(() => {
+    const groups = {};
+    Object.keys(CATEGORY_MAP).forEach((catId) => {
+      groups[catId] = { adHoc: [], recurring: [] };
+    });
+
+    tasks.forEach((task) => {
+      const catId = task.category || 'other';
+      if (!groups[catId]) {
+        groups[catId] = { adHoc: [], recurring: [] };
+      }
+      if (task.type === 'recurring') {
+        groups[catId].recurring.push(task);
+      } else {
+        groups[catId].adHoc.push(task);
+      }
+    });
+
+    return groups;
+  }, [tasks]);
+
+  const renderTaskItem = (task) => (
+    <div key={task.id} className="settings__task-item">
+      <div className="settings__task-item-details">
+        <span className="settings__task-item-title">{task.title}</span>
+        <div className="settings__task-item-meta">
+          <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
+          <span className="settings__task-item-price">€{(task.price ?? 0).toFixed(2)}</span>
+        </div>
+      </div>
+      <div className="settings__task-item-actions">
+        <button className="settings__icon-btn" onClick={() => onEditTask?.(task)} title="Edit task" type="button">
+          ✏️
+        </button>
+        <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => onDeleteTask?.(task.id)} title="Delete task" type="button">
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="settings">
       {/* Header */}
@@ -109,26 +151,38 @@ export default function SettingsPage({
           <h2 className="settings__section-title">Manage Tasks</h2>
         </div>
 
-        <div className="settings__tasks-list">
-          {tasks.map((task) => {
-            const cat = CATEGORY_MAP[task.category] || { label: task.category, emoji: '📋' };
+        <div className="settings__tasks-categories">
+          {Object.entries(groupedTasks).map(([catId, catGroup]) => {
+            const hasAdHoc = catGroup.adHoc.length > 0;
+            const hasRecurring = catGroup.recurring.length > 0;
+            if (!hasAdHoc && !hasRecurring) return null;
+
+            const cat = CATEGORY_MAP[catId] || { label: catId, emoji: '📋' };
+
             return (
-              <div key={task.id} className="settings__task-item">
-                <span className="settings__task-item-emoji" title={cat.label}>{cat.emoji}</span>
-                <div className="settings__task-item-details">
-                  <span className="settings__task-item-title">{task.title}</span>
-                  <div className="settings__task-item-meta">
-                    <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
-                    <span className="settings__task-item-price">€{(task.price ?? 0).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="settings__task-item-actions">
-                  <button className="settings__icon-btn" onClick={() => onEditTask?.(task)} title="Edit task" type="button">
-                    ✏️
-                  </button>
-                  <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => onDeleteTask?.(task.id)} title="Delete task" type="button">
-                    🗑️
-                  </button>
+              <div key={catId} className="settings__category-group">
+                <h3 className="settings__category-title">
+                  <span className="settings__category-emoji">{cat.emoji}</span> {cat.label}
+                </h3>
+                
+                <div className="settings__category-content">
+                  {hasRecurring && (
+                    <div className="settings__type-group">
+                      <h4 className="settings__type-title">Recurring</h4>
+                      <div className="settings__tasks-list">
+                        {catGroup.recurring.map(renderTaskItem)}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasAdHoc && (
+                    <div className="settings__type-group">
+                      <h4 className="settings__type-title">One-time</h4>
+                      <div className="settings__tasks-list">
+                        {catGroup.adHoc.map(renderTaskItem)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
