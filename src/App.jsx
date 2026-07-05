@@ -166,6 +166,15 @@ function App() {
             onCancel={() => setCashoutUser(null)}
           />
         )}
+
+        {showTaskForm && (
+          <TaskForm
+            task={editingTask}
+            categories={CATEGORIES}
+            onSave={handleSaveTask}
+            onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
+          />
+        )}
       </div>
     )
   }
