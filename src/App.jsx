@@ -117,6 +117,11 @@ function App() {
     await deleteTask(taskId)
   }, [])
 
+  const handleAddTaskInCategory = useCallback((categoryId) => {
+    setEditingTask({ category: categoryId })
+    setShowTaskForm(true)
+  }, [])
+
   const handleSaveUser = useCallback(async (userData, avatarFile) => {
     let avatarUrl = userData.avatar || ''
     
@@ -188,6 +193,7 @@ function App() {
           onDeleteUser={handleDeleteUser}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
+          onAddTaskInCategory={handleAddTaskInCategory}
           onCashout={(user) => setCashoutUser(user)}
           onSignOut={() => signOut(auth)}
           onBack={() => setPage('dashboard')}

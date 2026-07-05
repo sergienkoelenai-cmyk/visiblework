@@ -37,12 +37,52 @@ export default function UserForm({ user = null, onSave, onCancel }) {
       setError('Name is required');
       return;
     }
-    const userData = {
-      name: name.trim(),
-      avatarColor,
-      avatar: user?.avatar || '',
-    };
-    onSave?.(userData, photoFile);
+
+    if (photoFile) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const max_size = 120; // 120px is perfect for avatar
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > max_size) {
+              height *= max_size / width;
+              width = max_size;
+            }
+          } else {
+            if (height > max_size) {
+              width *= max_size / height;
+              height = max_size;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const base64Url = canvas.toDataURL('image/jpeg', 0.7); // 70% quality compression
+          const userData = {
+            name: name.trim(),
+            avatarColor,
+            avatar: base64Url,
+          };
+          onSave?.(userData, null); // pass null to skip Storage upload
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(photoFile);
+    } else {
+      const userData = {
+        name: name.trim(),
+        avatarColor,
+        avatar: photoPreview || '',
+      };
+      onSave?.(userData, null);
+    }
   };
 
   const handleClose = () => {

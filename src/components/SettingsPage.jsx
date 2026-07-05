@@ -18,6 +18,7 @@ const CATEGORY_MAP = {
 
 function getRecurrenceLabel(task) {
   if (task.type === 'ad-hoc') return 'One-time';
+  if (task.type === 'always-available') return 'Always available';
   const rec = task.recurrence;
   if (!rec) return 'Recurring';
   if (rec.mode === 'interval_from_completion') {
@@ -41,6 +42,7 @@ export default function SettingsPage({
   onDeleteUser,
   onEditTask,
   onDeleteTask,
+  onAddTaskInCategory,
   onCashout,
   onSignOut,
   onBack,
@@ -49,16 +51,18 @@ export default function SettingsPage({
   const groupedTasks = React.useMemo(() => {
     const groups = {};
     Object.keys(CATEGORY_MAP).forEach((catId) => {
-      groups[catId] = { adHoc: [], recurring: [] };
+      groups[catId] = { adHoc: [], recurring: [], alwaysAvailable: [] };
     });
 
     tasks.forEach((task) => {
       const catId = task.category || 'other';
       if (!groups[catId]) {
-        groups[catId] = { adHoc: [], recurring: [] };
+        groups[catId] = { adHoc: [], recurring: [], alwaysAvailable: [] };
       }
       if (task.type === 'recurring') {
         groups[catId].recurring.push(task);
+      } else if (task.type === 'always-available') {
+        groups[catId].alwaysAvailable.push(task);
       } else {
         groups[catId].adHoc.push(task);
       }
@@ -163,20 +167,38 @@ export default function SettingsPage({
         </div>
 
         <div className="settings__tasks-categories">
-          {Object.entries(groupedTasks).map(([catId, catGroup]) => {
+          {Object.entries(CATEGORY_MAP).map(([catId, cat]) => {
+            const catGroup = groupedTasks[catId] || { adHoc: [], recurring: [], alwaysAvailable: [] };
             const hasAdHoc = catGroup.adHoc.length > 0;
             const hasRecurring = catGroup.recurring.length > 0;
-            if (!hasAdHoc && !hasRecurring) return null;
-
-            const cat = CATEGORY_MAP[catId] || { label: catId, emoji: '📋' };
+            const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
+            const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
 
             return (
               <div key={catId} className="settings__category-group">
-                <h3 className="settings__category-title">
-                  <span className="settings__category-emoji">{cat.emoji}</span> {cat.label}
-                </h3>
+                <div className="settings__category-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
+                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                    <span className="settings__category-emoji">{cat.emoji}</span> {cat.label}
+                  </h3>
+                  <button
+                    className="settings__add-task-inline"
+                    onClick={() => onAddTaskInCategory?.(catId)}
+                    type="button"
+                  >
+                    + Add Task
+                  </button>
+                </div>
                 
                 <div className="settings__category-content">
+                  {hasAlwaysAvailable && (
+                    <div className="settings__type-group">
+                      <h4 className="settings__type-title">Always Available</h4>
+                      <div className="settings__tasks-list">
+                        {catGroup.alwaysAvailable.map(renderTaskItem)}
+                      </div>
+                    </div>
+                  )}
+
                   {hasRecurring && (
                     <div className="settings__type-group">
                       <h4 className="settings__type-title">Recurring</h4>
@@ -194,14 +216,14 @@ export default function SettingsPage({
                       </div>
                     </div>
                   )}
+
+                  {!hasAnyTasks && (
+                    <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
+                  )}
                 </div>
               </div>
             );
           })}
-
-          {tasks.length === 0 && (
-            <p className="settings__empty">No tasks yet. Create one from the main screen!</p>
-          )}
         </div>
       </section>
 

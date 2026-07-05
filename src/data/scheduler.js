@@ -59,6 +59,10 @@ function addMonths(date, months) {
  * @returns {Date|null}           Next due date, or null if the task is done.
  */
 export function calculateNextDueDate(task, completionDate) {
+  if (task.type === 'always-available') {
+    return startOfDay(new Date());
+  }
+
   // Ad-hoc tasks are one-shot — no next date.
   if (task.type === 'ad-hoc') {
     return null;
@@ -160,6 +164,10 @@ export function calculateNextDueDate(task, completionDate) {
  * @returns {'overdue'|'due_today'|'upcoming'|'completed'}
  */
 export function getTaskStatus(task) {
+  if (task.type === 'always-available') {
+    return 'due_today';
+  }
+
   // Ad-hoc tasks that are no longer active are considered completed.
   if (task.type === 'ad-hoc' && !task.isActive) {
     return 'completed';

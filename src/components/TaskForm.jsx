@@ -74,6 +74,8 @@ export default function TaskForm({ task = null, categories = [], onSave, onCance
           .sort((a, b) => a - b);
         nextDueDate = sorted.find(d => d >= today) || sorted[0] || new Date();
       }
+    } else if (taskType === 'always-available') {
+      nextDueDate = new Date();
     } else {
       // Ad-hoc tasks are due today by default
       nextDueDate = new Date();
@@ -84,7 +86,7 @@ export default function TaskForm({ task = null, categories = [], onSave, onCance
       description: description.trim(),
       category,
       price: parseFloat(price),
-      type: taskType === 'recurring' ? 'recurring' : 'ad-hoc',
+      type: taskType,
       isActive: true,
       nextDueDate,
     };
@@ -199,6 +201,13 @@ export default function TaskForm({ task = null, categories = [], onSave, onCance
             onClick={() => setTaskType('recurring')}
           >
             ↻ Recurring
+          </button>
+          <button
+            type="button"
+            className={`task-form__toggle ${taskType === 'always-available' ? 'task-form__toggle--active' : ''}`}
+            onClick={() => setTaskType('always-available')}
+          >
+            ∞ Always available
           </button>
         </div>
 

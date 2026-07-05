@@ -245,6 +245,32 @@
   gap: 16px;
 }
 
+.settings__add-task-inline {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border-hover);
+  background: transparent;
+  color: var(--color-accent-light);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 28px;
+  line-height: 1;
+}
+
+.settings__add-task-inline:hover {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow-accent);
+  transform: translateY(-1px);
+}
+
+.settings__add-task-inline:active {
+  transform: translateY(0);
+}
+
 .settings__category-title {
   margin: 0;
   font-size: 16px;

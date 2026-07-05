@@ -139,11 +139,11 @@
 
 .task-form__toggle {
   flex: 1;
-  padding: 10px 16px;
+  padding: 10px 8px;
   border: none;
   background: var(--color-surface-hover);
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   font-family: var(--font-family);
   cursor: pointer;

@@ -2,34 +2,7 @@ import React from 'react';
 import TaskCard from './TaskCard';
 import './TaskList.css';
 
-/**
- * Groups tasks by their pre-computed status field.
- * Status is set in App.jsx via getTaskStatus() before passing here.
- */
-function groupTasks(tasks) {
-  const overdue = [];
-  const dueToday = [];
-  const upcoming = [];
-
-  tasks.forEach((task) => {
-    switch (task.status) {
-      case 'overdue':
-        overdue.push(task);
-        break;
-      case 'due_today':
-        dueToday.push(task);
-        break;
-      case 'upcoming':
-      default:
-        upcoming.push(task);
-        break;
-    }
-  });
-
-  return { overdue, dueToday, upcoming };
-}
-
-export default function TaskList({ tasks = [], categories = [], onCompleteTask, onEditTask, onDeleteTask }) {
+export default function TaskList({ tasks = [], categories = [], onCompleteTask }) {
   if (tasks.length === 0) {
     return (
       <div className="task-list task-list--empty">
@@ -42,60 +15,85 @@ export default function TaskList({ tasks = [], categories = [], onCompleteTask, 
     );
   }
 
-  const { overdue, dueToday, upcoming } = groupTasks(tasks);
+  // 1. Group tasks by category ID
+  const groupedTasks = React.useMemo(() => {
+    const groups = {};
+    tasks.forEach((task) => {
+      const catId = task.category || 'other';
+      if (!groups[catId]) {
+        groups[catId] = [];
+      }
+      groups[catId].push(task);
+    });
+    return groups;
+  }, [tasks]);
 
-  // Helper to find category emoji
-  const getCategoryEmoji = (categoryId) => {
+  // Helper to find category details
+  const getCategoryDetails = (categoryId) => {
     const cat = categories.find(c => c.id === categoryId);
-    return cat ? cat.emoji : '📋';
+    return cat || { label: categoryId, emoji: '📋' };
   };
-
-  const renderCard = (task, statusLabel) => (
-    <TaskCard
-      key={task.id}
-      task={{ ...task, categoryEmoji: getCategoryEmoji(task.category) }}
-      statusLabel={statusLabel}
-      onComplete={onCompleteTask}
-    />
-  );
 
   return (
     <div className="task-list">
-      {overdue.length > 0 && (
-        <section className="task-list__group">
-          <h3 className="task-list__group-label task-list__group-label--overdue">
-            ⏰ Overdue
-            <span className="task-list__group-count">{overdue.length}</span>
-          </h3>
-          <div className="task-list__cards">
-            {overdue.map((task) => renderCard(task, 'overdue'))}
-          </div>
-        </section>
-      )}
+      {categories.map((cat) => {
+        const catTasks = groupedTasks[cat.id] || [];
+        if (catTasks.length === 0) return null;
 
-      {dueToday.length > 0 && (
-        <section className="task-list__group">
-          <h3 className="task-list__group-label task-list__group-label--due-today">
-            📅 Due Today
-            <span className="task-list__group-count">{dueToday.length}</span>
-          </h3>
-          <div className="task-list__cards">
-            {dueToday.map((task) => renderCard(task, 'due-today'))}
-          </div>
-        </section>
-      )}
+        return (
+          <section key={cat.id} className="task-list__group">
+            <h3 className="task-list__group-label" style={{ color: 'var(--color-text)', textTransform: 'none', fontSize: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '6px', marginBottom: '4px' }}>
+              <span style={{ marginRight: '6px' }}>{cat.emoji}</span>
+              {cat.label}
+              <span className="task-list__group-count" style={{ background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)', marginLeft: '8px', fontSize: '12px', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                {catTasks.length}
+              </span>
+            </h3>
+            
+            <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+              {catTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={{ ...task, categoryEmoji: cat.emoji }}
+                  statusLabel={task.status}
+                  onComplete={onCompleteTask}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
-      {upcoming.length > 0 && (
-        <section className="task-list__group">
-          <h3 className="task-list__group-label task-list__group-label--upcoming">
-            🗓️ Upcoming
-            <span className="task-list__group-count">{upcoming.length}</span>
-          </h3>
-          <div className="task-list__cards">
-            {upcoming.map((task) => renderCard(task, 'upcoming'))}
-          </div>
-        </section>
-      )}
+      {/* Render tasks in categories not predefined in categories prop, if any */}
+      {Object.entries(groupedTasks).map(([catId, catTasks]) => {
+        const isPredefined = categories.some(c => c.id === catId);
+        if (isPredefined || catTasks.length === 0) return null;
+
+        const catDetails = getCategoryDetails(catId);
+
+        return (
+          <section key={catId} className="task-list__group">
+            <h3 className="task-list__group-label" style={{ color: 'var(--color-text)', textTransform: 'none', fontSize: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '6px', marginBottom: '4px' }}>
+              <span style={{ marginRight: '6px' }}>{catDetails.emoji}</span>
+              {catDetails.label}
+              <span className="task-list__group-count" style={{ background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)', marginLeft: '8px', fontSize: '12px', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                {catTasks.length}
+              </span>
+            </h3>
+            
+            <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+              {catTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={{ ...task, categoryEmoji: catDetails.emoji }}
+                  statusLabel={task.status}
+                  onComplete={onCompleteTask}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -20,7 +20,10 @@ export default function TaskCard({ task, onComplete, statusLabel }) {
             {task.type === 'recurring' && (
               <span className="task-card__recurring" title="Recurring task">↻ Recurring</span>
             )}
-            {task.type !== 'recurring' && (
+            {task.type === 'always-available' && (
+              <span className="task-card__always" title="Always available" style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: 600 }}>∞ Always available</span>
+            )}
+            {task.type === 'ad-hoc' && (
               <span className="task-card__onetime">One-time</span>
             )}
             {task.category && (
