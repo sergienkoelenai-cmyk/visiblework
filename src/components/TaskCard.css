@@ -1,0 +1,129 @@
+/* ── TaskCard ── */
+
+.task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.2s ease;
+  min-height: 72px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md), var(--shadow-glow-accent);
+}
+
+.task-card:active {
+  transform: translateY(0);
+}
+
+/* ── Left side ── */
+.task-card__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-card__emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-active);
+  border-radius: var(--radius-sm);
+}
+
+.task-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.task-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.task-card__recurring {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.task-card__onetime {
+  color: var(--color-text-muted);
+}
+
+.task-card__category {
+  color: var(--color-text-secondary);
+}
+
+/* ── Right side ── */
+.task-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.task-card__price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-euro);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-card__status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.task-card__status--overdue  { color: var(--color-danger); }
+.task-card__status--due-today { color: var(--color-warning); }
+.task-card__status--upcoming  { color: var(--color-text-muted); }
+
+/* ── Overdue pulse ── */
+.task-card--overdue {
+  border-color: rgba(255, 82, 82, 0.25);
+  animation: task-card-overdue-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes task-card-overdue-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+  50%      { box-shadow: 0 0 16px rgba(255, 82, 82, 0.15); }
+}
+
+/* ── Due-today ── */
+.task-card--due-today {
+  border-color: rgba(255, 167, 38, 0.2);
+}

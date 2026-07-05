@@ -1,0 +1,85 @@
+/* ── TaskList ── */
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ── Groups ── */
+.task-list__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-list__group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 0 4px;
+  margin: 0;
+}
+
+.task-list__group-label--overdue  { color: var(--color-danger); }
+.task-list__group-label--due-today { color: var(--color-warning); }
+.task-list__group-label--upcoming  { color: var(--color-text-secondary); }
+
+.task-list__group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-active);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.task-list__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Empty state ── */
+.task-list--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.task-list__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.task-list__empty-emoji {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.task-list__empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.task-list__empty-subtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+}

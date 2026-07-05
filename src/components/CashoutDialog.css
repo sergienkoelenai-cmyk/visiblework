@@ -1,0 +1,163 @@
+/* ── CashoutDialog ── */
+
+.cashout {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.cashout--visible {
+  opacity: 1;
+}
+
+.cashout__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  max-width: 420px;
+  width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(30px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cashout--visible .cashout__card {
+  transform: translateY(0);
+}
+
+.cashout__heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ── User section ── */
+.cashout__user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+}
+
+.cashout__user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cashout__user-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cashout__user-balance {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.cashout__user-balance strong {
+  color: var(--color-euro);
+}
+
+/* ── Inputs ── */
+.cashout__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.cashout__optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.cashout__input {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font-family);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 44px;
+}
+
+.cashout__input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
+}
+
+.cashout__input--error {
+  border-color: var(--color-danger);
+}
+
+.cashout__error {
+  font-size: 12px;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+/* ── Actions ── */
+.cashout__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.cashout__btn {
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  min-height: 44px;
+}
+
+.cashout__btn:active {
+  transform: scale(0.97);
+}
+
+.cashout__btn--cancel {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.cashout__btn--cancel:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.cashout__btn--confirm {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.cashout__btn--confirm:hover {
+  box-shadow: var(--shadow-glow-success);
+}

@@ -1,0 +1,181 @@
+/* ── TaskCompletionOverlay ── */
+
+.tco {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tco--visible {
+  opacity: 1;
+}
+
+/* ── Card ── */
+.tco__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  max-width: 560px;
+  width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(40px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tco--visible .tco__card {
+  transform: translateY(0);
+}
+
+.tco__card--confirmed {
+  gap: 16px;
+}
+
+/* ── Heading ── */
+.tco__heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+}
+
+/* ── Task info ── */
+.tco__task-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  width: 100%;
+  justify-content: center;
+}
+
+.tco__task-emoji {
+  font-size: 24px;
+}
+
+.tco__task-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tco__task-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-euro);
+  margin-left: auto;
+}
+
+/* ── Avatars grid ── */
+.tco__avatars {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+/* ── Cancel ── */
+.tco__cancel {
+  padding: 12px 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  min-height: 44px;
+}
+
+.tco__cancel:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+}
+
+/* ── Success state ── */
+.tco__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.tco__success-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Checkmark ── */
+.tco__checkmark {
+  width: 80px;
+  height: 80px;
+}
+
+.tco__checkmark-svg {
+  width: 80px;
+  height: 80px;
+}
+
+.tco__checkmark-circle {
+  stroke: var(--color-success);
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: tco-circle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.tco__checkmark-check {
+  stroke: var(--color-success);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: tco-check 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
+}
+
+@keyframes tco-circle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes tco-check {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Price float up ── */
+.tco__price-float {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-success);
+  animation: tco-float-up 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-shadow: 0 0 20px var(--color-success-glow);
+}
+
+@keyframes tco-float-up {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.8); }
+  30%  { opacity: 1; transform: translateY(0) scale(1.1); }
+  50%  { transform: translateY(-4px) scale(1); }
+  100% { opacity: 1; transform: translateY(-8px) scale(1); }
+}

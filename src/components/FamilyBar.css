@@ -1,0 +1,35 @@
+/* ── FamilyBar ── */
+
+.family-bar {
+  width: 100%;
+  padding: 20px 24px;
+  background: rgba(20, 20, 31, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-active) transparent;
+}
+
+.family-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.family-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.family-bar::-webkit-scrollbar-thumb {
+  background: var(--color-surface-active);
+  border-radius: var(--radius-full);
+}
+
+.family-bar__track {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  min-width: min-content;
+}

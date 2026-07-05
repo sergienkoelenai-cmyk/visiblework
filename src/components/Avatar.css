@@ -1,0 +1,112 @@
+/* ── Avatar ── */
+
+.avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.avatar--clickable {
+  cursor: pointer;
+}
+
+/* Circle */
+.avatar__circle {
+  position: relative;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--color-accent);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.avatar--clickable:hover .avatar__circle {
+  transform: scale(1.08);
+}
+
+.avatar--clickable:active .avatar__circle {
+  transform: scale(0.97);
+}
+
+/* Image */
+.avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+/* Initials fallback */
+.avatar__initials {
+  color: var(--color-text);
+  font-weight: 700;
+  font-family: var(--font-family);
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+/* Info block */
+.avatar__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.avatar__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.avatar__balance {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-euro);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Selected state ── */
+.avatar--selected .avatar__circle {
+  box-shadow: 0 0 0 3px var(--avatar-color, var(--color-accent)),
+              0 0 24px var(--avatar-color, var(--color-accent-glow));
+  animation: avatar-select-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes avatar-select-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--avatar-color, var(--color-accent)), 0 0 20px var(--avatar-color, var(--color-accent-glow)); }
+  50%      { box-shadow: 0 0 0 5px var(--avatar-color, var(--color-accent)), 0 0 36px var(--avatar-color, var(--color-accent-glow)); }
+}
+
+/* ── Glowing state ── */
+.avatar--glowing .avatar__circle {
+  animation: avatar-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes avatar-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(108,92,231,0.15); }
+  50%      { box-shadow: 0 0 20px rgba(108,92,231,0.35); }
+}
+
+/* ── Size variants ── */
+.avatar--sm .avatar__circle { width: 40px; height: 40px; border-width: 2px; }
+.avatar--md .avatar__circle { width: 56px; height: 56px; border-width: 2px; }
+.avatar--lg .avatar__circle { width: 80px; height: 80px; border-width: 3px; }
+.avatar--xl .avatar__circle { width: 120px; height: 120px; border-width: 3px; }
+
+.avatar--sm .avatar__name { font-size: 11px; }
+.avatar--sm .avatar__balance { font-size: 11px; }
+.avatar--lg .avatar__balance { font-size: 16px; }
+.avatar--xl .avatar__name { font-size: 16px; }
+.avatar--xl .avatar__balance { font-size: 18px; }
