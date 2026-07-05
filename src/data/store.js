@@ -11,6 +11,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   getDoc,
   getDocs,
   updateDoc,
@@ -309,9 +310,63 @@ export async function completeTask(taskId, userId) {
       userName: user.name || '',
       amount: task.price || 0,
       completedAt: Timestamp.fromDate(now),
+      previousDueDate: task.nextDueDate || null,
     });
 
     return { completionId: completionRef.id };
+  });
+
+  return result;
+}
+
+/**
+ * Undo/revert a task completion: delete the log, subtract the earnings
+ * from the user, and restore the task's active status and previous due date.
+ *
+ * Runs inside a Firestore transaction for atomicity.
+ *
+ * @param {string} completionId
+ */
+export async function revertTaskCompletion(completionId) {
+  const completionRef = doc(db, 'completions', completionId);
+
+  const result = await runTransaction(db, async (transaction) => {
+    const compSnap = await transaction.get(completionRef);
+    if (!compSnap.exists()) {
+      throw new Error(`Completion record ${completionId} not found.`);
+    }
+    const comp = compSnap.data();
+
+    const taskRef = doc(db, 'tasks', comp.taskId);
+    const userRef = doc(db, 'users', comp.userId);
+
+    const taskSnap = await transaction.get(taskRef);
+    const userSnap = await transaction.get(userRef);
+
+    // Revert user earnings if user still exists
+    if (userSnap.exists()) {
+      const refund = comp.amount || 0;
+      transaction.update(userRef, {
+        balance: increment(-refund),
+        totalEarned: increment(-refund),
+      });
+    }
+
+    // Revert task state if task still exists
+    if (taskSnap.exists()) {
+      const updates = {
+        isActive: true, // Make it active again
+        nextDueDate: comp.previousDueDate || null,
+        lastCompletedAt: null,
+        lastCompletedBy: null,
+      };
+      transaction.update(taskRef, updates);
+    }
+
+    // Delete completion log
+    transaction.delete(completionRef);
+
+    return { success: true };
   });
 
   return result;
@@ -380,5 +435,83 @@ export async function uploadAvatar(file, userId) {
   const storageRef = ref(storage, `avatars/${userId}.${ext}`);
   await uploadBytes(storageRef, file);
   return getDownloadURL(storageRef);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  CATEGORIES
+// ═════════════════════════════════════════════════════════════════════════════
+
+async function seedCategories() {
+  const defaults = [
+    { id: 'cleaning', label: 'Cleaning', emoji: '🧹', createdAt: new Date() },
+    { id: 'kitchen', label: 'Kitchen', emoji: '🍽️', createdAt: new Date() },
+    { id: 'laundry', label: 'Laundry', emoji: '👕', createdAt: new Date() },
+    { id: 'shopping', label: 'Shopping', emoji: '🛒', createdAt: new Date() },
+    { id: 'bills', label: 'Bills', emoji: '💰', createdAt: new Date() },
+    { id: 'repairs', label: 'Repairs', emoji: '🔧', createdAt: new Date() },
+    { id: 'garden', label: 'Garden', emoji: '🌱', createdAt: new Date() },
+    { id: 'pets', label: 'Pets', emoji: '🐾', createdAt: new Date() },
+    { id: 'kids', label: 'Kids', emoji: '🧒', createdAt: new Date() },
+    { id: 'cars', label: 'Cars', emoji: '🚗', createdAt: new Date() },
+    { id: 'other', label: 'Other', emoji: '📋', createdAt: new Date() },
+  ];
+  for (const cat of defaults) {
+    await setDoc(doc(db, 'categories', cat.id), cat);
+  }
+}
+
+/**
+ * Subscribe to real-time categories updates.
+ * Seeds with default categories if the collection is empty.
+ *
+ * @param {Function} callback
+ * @returns {Function} Unsubscribe function.
+ */
+export function subscribeToCategories(callback) {
+  const q = query(collection(db, 'categories'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => {
+    if (snap.empty) {
+      seedCategories().catch(console.error);
+    } else {
+      callback(snap.docs.map(docToObj));
+    }
+  });
+}
+
+/**
+ * Add a new custom category.
+ *
+ * @param {Object} data - { label, emoji }
+ * @returns {Promise<string>} Created category ID.
+ */
+export async function addCategory(data) {
+  const id = data.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'custom';
+  const catDoc = {
+    id,
+    label: data.label.trim(),
+    emoji: data.emoji || '📋',
+    createdAt: new Date(),
+  };
+  await setDoc(doc(db, 'categories', id), catDoc);
+  return id;
+}
+
+/**
+ * Delete a category and assign all of its tasks to the 'other' category fallback.
+ *
+ * @param {string} id - Category ID.
+ */
+export async function deleteCategory(id) {
+  if (id === 'other') return;
+
+  // 1. Delete category document
+  await deleteDoc(doc(db, 'categories', id));
+
+  // 2. Query all tasks with this category and update them to 'other'
+  const tasksQuery = query(collection(db, 'tasks'), where('category', '==', id));
+  const snap = await getDocs(tasksQuery);
+  for (const docSnap of snap.docs) {
+    await updateDoc(docSnap.ref, { category: 'other' });
+  }
 }
 

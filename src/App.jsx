@@ -1,6 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
-import { subscribeToUsers, subscribeToTasks, addUser, updateUser, deleteUser, addTask, updateTask, deleteTask, completeTask, cashoutUser, getCompletions, uploadAvatar } from './data/store'
+import { 
+  subscribeToUsers, 
+  subscribeToTasks, 
+  subscribeToCategories,
+  addUser, 
+  updateUser, 
+  deleteUser, 
+  addTask, 
+  updateTask, 
+  deleteTask, 
+  addCategory,
+  deleteCategory,
+  completeTask, 
+  revertTaskCompletion,
+  cashoutUser, 
+  getCompletions, 
+  uploadAvatar 
+} from './data/store'
 import { sortTasksByUrgency, getTaskStatus } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
@@ -14,20 +31,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
 import Login from './components/Login'
 
-const CATEGORIES = [
-  { id: 'cleaning', label: 'Cleaning', emoji: '🧹' },
-  { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
-  { id: 'laundry', label: 'Laundry', emoji: '👕' },
-  { id: 'shopping', label: 'Shopping', emoji: '🛒' },
-  { id: 'bills', label: 'Bills', emoji: '💰' },
-  { id: 'repairs', label: 'Repairs', emoji: '🔧' },
-  { id: 'garden', label: 'Garden', emoji: '🌱' },
-  { id: 'pets', label: 'Pets', emoji: '🐾' },
-  { id: 'kids', label: 'Kids', emoji: '🧒' },
-  { id: 'cars', label: 'Cars', emoji: '🚗' },
-  { id: 'other', label: 'Other', emoji: '📋' },
-]
-
 function App() {
   // --- Auth State ---
   const [currentUser, setCurrentUser] = useState(null)
@@ -36,6 +39,7 @@ function App() {
   // --- Data State ---
   const [users, setUsers] = useState([])
   const [tasks, setTasks] = useState([])
+  const [categories, setCategories] = useState([])
   const [completions, setCompletions] = useState([])
   const [page, setPage] = useState('dashboard') // 'dashboard' | 'settings'
   
@@ -66,10 +70,14 @@ function App() {
     const unsubTasks = subscribeToTasks((updatedTasks) => {
       setTasks(updatedTasks)
     })
+    const unsubCategories = subscribeToCategories((updatedCategories) => {
+      setCategories(updatedCategories)
+    })
 
     return () => {
       unsubUsers()
       unsubTasks()
+      unsubCategories()
     }
   }, [currentUser])
 
@@ -81,7 +89,22 @@ function App() {
   }, [page, currentUser])
 
   // --- Derived data ---
-  const activeTasks = tasks.filter(t => t.isActive)
+  const activeTasks = tasks.filter(t => {
+    if (!t.isActive) return false;
+    if (t.type === 'always-available') return true;
+    if (t.type === 'ad-hoc') return true;
+    if (t.nextDueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const threeDaysFromNow = new Date();
+      threeDaysFromNow.setDate(today.getDate() + 3);
+      threeDaysFromNow.setHours(23, 59, 59, 999);
+      
+      const dueDate = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+      return dueDate <= threeDaysFromNow;
+    }
+    return true;
+  })
   const sortedTasks = sortTasksByUrgency(activeTasks)
   const tasksWithStatus = sortedTasks.map(t => ({
     ...t,
@@ -99,7 +122,7 @@ function App() {
   }, [])
 
   const handleSaveTask = useCallback(async (taskData) => {
-    if (editingTask) {
+    if (editingTask && editingTask.id) {
       await updateTask(editingTask.id, taskData)
     } else {
       await addTask(taskData)
@@ -121,6 +144,22 @@ function App() {
     setEditingTask({ category: categoryId })
     setShowTaskForm(true)
   }, [])
+
+  const handleSaveCategory = useCallback(async (categoryData) => {
+    await addCategory(categoryData)
+  }, [])
+
+  const handleDeleteCategory = useCallback(async (categoryId) => {
+    await deleteCategory(categoryId)
+  }, [])
+
+  const handleRevertCompletion = useCallback(async (completionId) => {
+    await revertTaskCompletion(completionId)
+    if (page === 'settings') {
+      const updatedCompletions = await getCompletions(100)
+      setCompletions(updatedCompletions)
+    }
+  }, [page])
 
   const handleSaveUser = useCallback(async (userData, avatarFile) => {
     let avatarUrl = userData.avatar || ''
@@ -187,6 +226,7 @@ function App() {
         <SettingsPage
           users={users}
           tasks={tasks}
+          categories={categories}
           completions={completions}
           onAddUser={() => { setEditingUser(null); setShowUserForm(true) }}
           onEditUser={handleEditUser}
@@ -194,6 +234,9 @@ function App() {
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
           onAddTaskInCategory={handleAddTaskInCategory}
+          onAddCategory={handleSaveCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onRevertCompletion={handleRevertCompletion}
           onCashout={(user) => setCashoutUser(user)}
           onSignOut={() => signOut(auth)}
           onBack={() => setPage('dashboard')}

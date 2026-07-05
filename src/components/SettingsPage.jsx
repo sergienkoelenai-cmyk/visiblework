@@ -1,20 +1,8 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import Avatar from './Avatar';
 import './SettingsPage.css';
 
-const CATEGORY_MAP = {
-  cleaning: { label: 'Cleaning', emoji: '🧹' },
-  kitchen: { label: 'Kitchen', emoji: '🍽️' },
-  laundry: { label: 'Laundry', emoji: '👕' },
-  shopping: { label: 'Shopping', emoji: '🛒' },
-  bills: { label: 'Bills', emoji: '💰' },
-  repairs: { label: 'Repairs', emoji: '🔧' },
-  garden: { label: 'Garden', emoji: '🌱' },
-  pets: { label: 'Pets', emoji: '🐾' },
-  kids: { label: 'Kids', emoji: '🧒' },
-  cars: { label: 'Cars', emoji: '🚗' },
-  other: { label: 'Other', emoji: '📋' },
-};
+const COMMON_EMOJIS = ['🧹', '🍽️', '👕', '🛒', '💰', '🔧', '🌱', '🐾', '🧒', '🚗', '📋', '📚', '🛁', '🏠', '💻', '🔋', '🐱', '🐶', '🍕', '🔑'];
 
 function getRecurrenceLabel(task) {
   if (task.type === 'ad-hoc') return 'One-time';
@@ -36,6 +24,7 @@ function getRecurrenceLabel(task) {
 export default function SettingsPage({
   users = [],
   tasks = [],
+  categories = [],
   completions = [],
   onAddUser,
   onEditUser,
@@ -43,15 +32,23 @@ export default function SettingsPage({
   onEditTask,
   onDeleteTask,
   onAddTaskInCategory,
+  onAddCategory,
+  onDeleteCategory,
   onCashout,
   onSignOut,
   onBack,
 }) {
+  // Category management local state
+  const [showAddCat, setShowAddCat] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState('');
+  const [newCatEmoji, setNewCatEmoji] = useState(COMMON_EMOJIS[0]);
+  const [catError, setCatError] = useState('');
+
   // Group tasks by category and recurrence type
-  const groupedTasks = React.useMemo(() => {
+  const groupedTasks = useMemo(() => {
     const groups = {};
-    Object.keys(CATEGORY_MAP).forEach((catId) => {
-      groups[catId] = { adHoc: [], recurring: [], alwaysAvailable: [] };
+    categories.forEach((cat) => {
+      groups[cat.id] = { adHoc: [], recurring: [], alwaysAvailable: [] };
     });
 
     tasks.forEach((task) => {
@@ -69,7 +66,22 @@ export default function SettingsPage({
     });
 
     return groups;
-  }, [tasks]);
+  }, [tasks, categories]);
+
+  const handleSaveCategory = (e) => {
+    e.preventDefault();
+    if (!newCatLabel.trim()) {
+      setCatError('Label is required');
+      return;
+    }
+    onAddCategory?.({
+      label: newCatLabel.trim(),
+      emoji: newCatEmoji,
+    });
+    setNewCatLabel('');
+    setShowAddCat(false);
+    setCatError('');
+  };
 
   const renderTaskItem = (task) => (
     <div key={task.id} className="settings__task-item">
@@ -160,6 +172,73 @@ export default function SettingsPage({
         </div>
       </section>
 
+      {/* ── Manage Categories ── */}
+      <section className="settings__section">
+        <div className="settings__section-header">
+          <h2 className="settings__section-title">Manage Categories</h2>
+          {!showAddCat && (
+            <button className="settings__add-btn" onClick={() => setShowAddCat(true)} type="button">
+              + Add Category
+            </button>
+          )}
+        </div>
+
+        {showAddCat && (
+          <form className="settings__cat-form" onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Emoji</span>
+              <select className="task-form__select" value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} style={{ minWidth: '70px', padding: '8px 10px', minHeight: '38px' }}>
+                {COMMON_EMOJIS.map(em => (
+                  <option key={em} value={em}>{em}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Category Name</span>
+              <input
+                className="task-form__input"
+                type="text"
+                value={newCatLabel}
+                onChange={(e) => { setNewCatLabel(e.target.value); setCatError(''); }}
+                placeholder="e.g. Cooking"
+                style={{ padding: '8px 12px', minHeight: '38px' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="settings__back" onClick={() => { setShowAddCat(false); setCatError(''); }} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
+                Cancel
+              </button>
+              <button className="settings__add-btn" type="submit" style={{ padding: '8px 16px', minHeight: '38px' }}>
+                Save
+              </button>
+            </div>
+            {catError && <p style={{ color: 'var(--color-danger)', fontSize: '12px', width: '100%', margin: '4px 0 0 0' }}>{catError}</p>}
+          </form>
+        )}
+
+        <div className="settings__categories-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+          {categories.map((cat) => (
+            <div key={cat.id} className="settings__category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>{cat.emoji}</span>
+                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text)' }}>{cat.label}</span>
+              </div>
+              {cat.id !== 'other' && (
+                <button
+                  className="settings__icon-btn settings__icon-btn--danger"
+                  onClick={() => onDeleteCategory?.(cat.id)}
+                  title={`Delete ${cat.label}`}
+                  type="button"
+                  style={{ width: '32px', height: '32px', fontSize: '14px', borderRadius: 'var(--radius-sm)' }}
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Manage Tasks ── */}
       <section className="settings__section">
         <div className="settings__section-header">
@@ -167,22 +246,22 @@ export default function SettingsPage({
         </div>
 
         <div className="settings__tasks-categories">
-          {Object.entries(CATEGORY_MAP).map(([catId, cat]) => {
-            const catGroup = groupedTasks[catId] || { adHoc: [], recurring: [], alwaysAvailable: [] };
+          {categories.map((cat) => {
+            const catGroup = groupedTasks[cat.id] || { adHoc: [], recurring: [], alwaysAvailable: [] };
             const hasAdHoc = catGroup.adHoc.length > 0;
             const hasRecurring = catGroup.recurring.length > 0;
             const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
             const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
 
             return (
-              <div key={catId} className="settings__category-group">
+              <div key={cat.id} className="settings__category-group">
                 <div className="settings__category-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
                   <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0 }}>
                     <span className="settings__category-emoji">{cat.emoji}</span> {cat.label}
                   </h3>
                   <button
                     className="settings__add-task-inline"
-                    onClick={() => onAddTaskInCategory?.(catId)}
+                    onClick={() => onAddTaskInCategory?.(cat.id)}
                     type="button"
                   >
                     + Add Task
@@ -238,6 +317,7 @@ export default function SettingsPage({
               <span>Task</span>
               <span>Who</span>
               <span>Amount</span>
+              <span style={{ textAlign: 'center' }}>Undo</span>
             </div>
             {completions.map((entry, idx) => (
               <div key={entry.id || idx} className="settings__history-row">
@@ -250,6 +330,21 @@ export default function SettingsPage({
                 <span className="settings__history-user">{entry.userName || '—'}</span>
                 <span className="settings__history-amount">
                   €{typeof entry.amount === 'number' ? entry.amount.toFixed(2) : '0.00'}
+                </span>
+                <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <button
+                    className="settings__icon-btn"
+                    onClick={() => {
+                      if (window.confirm(`Do you want to undo the completion of "${entry.taskTitle || 'this task'}"?`)) {
+                        onRevertCompletion?.(entry.id);
+                      }
+                    }}
+                    title="Undo this completion"
+                    type="button"
+                    style={{ width: '28px', height: '28px', fontSize: '12px', padding: 0 }}
+                  >
+                    ↩️
+                  </button>
                 </span>
               </div>
             ))}

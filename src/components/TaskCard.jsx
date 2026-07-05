@@ -36,9 +36,21 @@ export default function TaskCard({ task, onComplete, statusLabel }) {
       <div className="task-card__right">
         <span className="task-card__price">€{typeof task.price === 'number' ? task.price.toFixed(2) : '0.00'}</span>
         <span className={`task-card__status task-card__status--${status}`}>
-          {status === 'overdue' && '⏰ Overdue'}
-          {status === 'due-today' && '📅 Due today'}
-          {status === 'upcoming' && '🗓️ Upcoming'}
+          {(() => {
+            if (status === 'overdue') return '⏰ Overdue';
+            if (status === 'due-today') return '📅 Due today';
+            if (status === 'upcoming' && task.nextDueDate) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const dueDate = task.nextDueDate.toDate ? task.nextDueDate.toDate() : new Date(task.nextDueDate);
+              dueDate.setHours(0, 0, 0, 0);
+              const diffMs = dueDate.getTime() - today.getTime();
+              const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+              if (diffDays === 1) return '🗓️ Due tomorrow';
+              if (diffDays > 1) return `🗓️ Due in ${diffDays} days`;
+            }
+            return '🗓️ Upcoming';
+          })()}
         </span>
       </div>
     </div>

@@ -183,7 +183,7 @@
 
 .settings__history-header {
   display: grid;
-  grid-template-columns: 110px 1fr 120px 90px;
+  grid-template-columns: 110px 1fr 120px 80px 60px;
   padding: 10px 16px;
   background: var(--color-surface-active);
   font-size: 11px;
@@ -195,7 +195,7 @@
 
 .settings__history-row {
   display: grid;
-  grid-template-columns: 110px 1fr 120px 90px;
+  grid-template-columns: 110px 1fr 120px 80px 60px;
   padding: 12px 16px;
   font-size: 14px;
   color: var(--color-text);
