@@ -469,13 +469,33 @@ async function seedCategories() {
  */
 export function subscribeToCategories(callback) {
   const q = query(collection(db, 'categories'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snap) => {
-    if (snap.empty) {
-      seedCategories().catch(console.error);
-    } else {
-      callback(snap.docs.map(docToObj));
+  return onSnapshot(q, 
+    (snap) => {
+      if (snap.empty) {
+        seedCategories().catch(console.error);
+      } else {
+        callback(snap.docs.map(docToObj));
+      }
+    },
+    (err) => {
+      console.error("Error subscribing to categories (check your Firestore rules):", err);
+      // Graceful fallback to default categories to prevent blank screen crash
+      const defaults = [
+        { id: 'cleaning', label: 'Cleaning', emoji: '🧹' },
+        { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
+        { id: 'laundry', label: 'Laundry', emoji: '👕' },
+        { id: 'shopping', label: 'Shopping', emoji: '🛒' },
+        { id: 'bills', label: 'Bills', emoji: '💰' },
+        { id: 'repairs', label: 'Repairs', emoji: '🔧' },
+        { id: 'garden', label: 'Garden', emoji: '🌱' },
+        { id: 'pets', label: 'Pets', emoji: '🐾' },
+        { id: 'kids', label: 'Kids', emoji: '🧒' },
+        { id: 'cars', label: 'Cars', emoji: '🚗' },
+        { id: 'other', label: 'Other', emoji: '📋' },
+      ];
+      callback(defaults);
     }
-  });
+  );
 }
 
 /**
