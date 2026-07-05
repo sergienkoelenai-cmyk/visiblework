@@ -20,6 +20,7 @@ const CATEGORIES = [
   { id: 'garden', label: 'Garden', emoji: '🌱' },
   { id: 'pets', label: 'Pets', emoji: '🐾' },
   { id: 'kids', label: 'Kids', emoji: '🧒' },
+  { id: 'cars', label: 'Cars', emoji: '🚗' },
   { id: 'other', label: 'Other', emoji: '📋' },
 ]
 
@@ -139,10 +140,13 @@ function App() {
       <div className="app">
         <SettingsPage
           users={users}
+          tasks={tasks}
           completions={completions}
           onAddUser={() => { setEditingUser(null); setShowUserForm(true) }}
           onEditUser={handleEditUser}
           onDeleteUser={handleDeleteUser}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
           onCashout={(user) => setCashoutUser(user)}
           onBack={() => setPage('dashboard')}
         />

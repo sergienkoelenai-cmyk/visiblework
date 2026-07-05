@@ -2,12 +2,45 @@ import React from 'react';
 import Avatar from './Avatar';
 import './SettingsPage.css';
 
+const CATEGORY_MAP = {
+  cleaning: { label: 'Cleaning', emoji: '🧹' },
+  kitchen: { label: 'Kitchen', emoji: '🍽️' },
+  laundry: { label: 'Laundry', emoji: '👕' },
+  shopping: { label: 'Shopping', emoji: '🛒' },
+  bills: { label: 'Bills', emoji: '💰' },
+  repairs: { label: 'Repairs', emoji: '🔧' },
+  garden: { label: 'Garden', emoji: '🌱' },
+  pets: { label: 'Pets', emoji: '🐾' },
+  kids: { label: 'Kids', emoji: '🧒' },
+  cars: { label: 'Cars', emoji: '🚗' },
+  other: { label: 'Other', emoji: '📋' },
+};
+
+function getRecurrenceLabel(task) {
+  if (task.type === 'ad-hoc') return 'One-time';
+  const rec = task.recurrence;
+  if (!rec) return 'Recurring';
+  if (rec.mode === 'interval_from_completion') {
+    return `Every ${rec.intervalDays} day${rec.intervalDays > 1 ? 's' : ''}`;
+  }
+  if (rec.mode === 'fixed_interval') {
+    return `Every ${rec.fixedIntervalValue} ${rec.fixedIntervalUnit}`;
+  }
+  if (rec.mode === 'custom_schedule') {
+    return 'Custom schedule';
+  }
+  return 'Recurring';
+}
+
 export default function SettingsPage({
   users = [],
+  tasks = [],
   completions = [],
   onAddUser,
   onEditUser,
   onDeleteUser,
+  onEditTask,
+  onDeleteTask,
   onCashout,
   onBack,
 }) {
@@ -66,6 +99,43 @@ export default function SettingsPage({
 
           {users.length === 0 && (
             <p className="settings__empty">No family members yet. Add someone to get started!</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── Manage Tasks ── */}
+      <section className="settings__section">
+        <div className="settings__section-header">
+          <h2 className="settings__section-title">Manage Tasks</h2>
+        </div>
+
+        <div className="settings__tasks-list">
+          {tasks.map((task) => {
+            const cat = CATEGORY_MAP[task.category] || { label: task.category, emoji: '📋' };
+            return (
+              <div key={task.id} className="settings__task-item">
+                <span className="settings__task-item-emoji" title={cat.label}>{cat.emoji}</span>
+                <div className="settings__task-item-details">
+                  <span className="settings__task-item-title">{task.title}</span>
+                  <div className="settings__task-item-meta">
+                    <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
+                    <span className="settings__task-item-price">€{(task.price ?? 0).toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="settings__task-item-actions">
+                  <button className="settings__icon-btn" onClick={() => onEditTask?.(task)} title="Edit task" type="button">
+                    ✏️
+                  </button>
+                  <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => onDeleteTask?.(task.id)} title="Delete task" type="button">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {tasks.length === 0 && (
+            <p className="settings__empty">No tasks yet. Create one from the main screen!</p>
           )}
         </div>
       </section>
