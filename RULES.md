@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.3.0  | High-density FavoriteTaskCard component (removes redundant labels/badges, ~40-50% height reduction for mobile) |
 | v2.2.0  | Critical Tasks flag (`is_critical`) & "Critical Focus" prominent dashboard block for due/overdue critical tasks |
 | v2.1.1  | Make Tasks section first in Settings, rename Manage Categories to Categories, move Add buttons inside expanded sections |
 | v2.1.0  | Make Settings screen sections (Economy, Family, Categories) and task categories collapsible |

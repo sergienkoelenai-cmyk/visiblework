@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import TaskCard from './TaskCard';
+import FavoriteTaskCard from './FavoriteTaskCard';
 import './TaskList.css';
 
 export default function TaskList({ tasks = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
@@ -131,16 +132,15 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
               {favoriteTasks.length}
             </span>
           </h3>
-          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
             {favoriteTasks.map((task) => {
               const catDetails = getCategoryDetails(task.category || 'other');
               return (
-                <TaskCard
+                <FavoriteTaskCard
                   key={task.id}
                   task={{ ...task, categoryEmoji: catDetails.emoji }}
                   baseRate={baseRate}
                   complexityMultipliers={complexityMultipliers}
-                  statusLabel={task.status}
                   onComplete={onCompleteTask}
                 />
               );
