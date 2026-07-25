@@ -64,10 +64,11 @@ export const DURATION_PRESETS = [
  * @returns {number} duration in minutes
  */
 export function getTaskDurationMinutes(task) {
-  if (typeof task.duration_minutes === 'number' && task.duration_minutes > 0) {
+  if (!task) return 0;
+  if (typeof task.duration_minutes === 'number' && task.duration_minutes >= 0) {
     return task.duration_minutes;
   }
-  if (typeof task.estimated_time_minutes === 'number' && task.estimated_time_minutes > 0) {
+  if (typeof task.estimated_time_minutes === 'number' && task.estimated_time_minutes >= 0) {
     return task.estimated_time_minutes;
   }
   if (task.estimated_time === 'SHORT') return 15;

@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.0.1  | Allow clearing price/duration inputs to empty state during editing; allow 0 price and 0 duration |
 | v2.0.0  | Feats & Random Task Generator (availability guard, capacity filter, recency weighting, & Feat tags) |
 | v1.9.1  | Fix missing React/useState imports in TaskForm preventing task modal from opening |
 | v1.9.0  | Configurable effort coefficients (Low/Med/High) in Settings, manual minute-based duration per task |

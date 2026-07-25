@@ -213,7 +213,7 @@ export default function SettingsPage({
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
               <input
                 type="number"
-                min="0.001"
+                min="0"
                 step="0.01"
                 className="task-form__input"
                 value={baseRateInput}
@@ -233,7 +233,7 @@ export default function SettingsPage({
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟢 Low</span>
                 <input
                   type="number"
-                  min="0.1"
+                  min="0"
                   step="0.1"
                   className="task-form__input"
                   value={lowMultInput}
@@ -245,7 +245,7 @@ export default function SettingsPage({
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟡 Medium</span>
                 <input
                   type="number"
-                  min="0.1"
+                  min="0"
                   step="0.1"
                   className="task-form__input"
                   value={medMultInput}
@@ -257,7 +257,7 @@ export default function SettingsPage({
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🔴 High</span>
                 <input
                   type="number"
-                  min="0.1"
+                  min="0"
                   step="0.1"
                   className="task-form__input"
                   value={highMultInput}
@@ -272,11 +272,11 @@ export default function SettingsPage({
             className="settings__add-btn"
             type="button"
             onClick={() => {
-              const rate = parseFloat(baseRateInput);
-              const low = parseFloat(lowMultInput);
-              const med = parseFloat(medMultInput);
-              const high = parseFloat(highMultInput);
-              if (!isNaN(rate) && rate > 0 && !isNaN(low) && !isNaN(med) && !isNaN(high)) {
+              const rate = parseFloat(baseRateInput) || 0;
+              const low = parseFloat(lowMultInput) || 0;
+              const med = parseFloat(medMultInput) || 0;
+              const high = parseFloat(highMultInput) || 0;
+              if (!isNaN(rate) && rate >= 0 && !isNaN(low) && !isNaN(med) && !isNaN(high)) {
                 onUpdateSettings?.({
                   base_rate: rate,
                   complexity_multipliers: { LOW: low, MEDIUM: med, HIGH: high },
@@ -589,7 +589,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v2.0.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.0.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

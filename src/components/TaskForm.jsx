@@ -28,10 +28,12 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
   // Pricing state
   const [complexity, setComplexity] = useState(COMPLEXITY.LOW);
-  const [durationMinutes, setDurationMinutes] = useState(15);
+  const [durationInput, setDurationInput] = useState('15');
   const [customCost, setCustomCost] = useState(null); // null = auto
   const [editingCost, setEditingCost] = useState(false); // show inline input
   const [customCostInput, setCustomCostInput] = useState('');
+
+  const durationMinutes = durationInput === '' ? 0 : (parseInt(durationInput, 10) || 0);
 
   // Icon
   const [icon, setIcon] = useState('');
@@ -62,7 +64,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
       // Pricing fields
       setComplexity(task.complexity || COMPLEXITY.LOW);
-      setDurationMinutes(getTaskDurationMinutes(task));
+      setDurationInput(String(getTaskDurationMinutes(task)));
       if (task.custom_cost !== null && task.custom_cost !== undefined) {
         setCustomCost(task.custom_cost);
         setCustomCostInput(String(task.custom_cost));
@@ -418,17 +420,16 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
                 type="number"
-                min="1"
+                min="0"
                 step="1"
                 className="task-form__input"
-                value={durationMinutes}
+                value={durationInput}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setDurationMinutes(val);
+                  setDurationInput(e.target.value);
                   setCustomCost(null);
                   setEditingCost(false);
                 }}
-                placeholder="e.g. 15"
+                placeholder="0"
                 style={{ fontWeight: 600 }}
               />
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -441,7 +442,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
                       className={`task-form__weekday-pill ${active ? 'task-form__weekday-pill--active' : ''}`}
                       style={{ width: 'auto', minWidth: '44px', height: '32px', borderRadius: 'var(--radius-full)', padding: '0 10px' }}
                       onClick={() => {
-                        setDurationMinutes(preset.value);
+                        setDurationInput(String(preset.value));
                         setCustomCost(null);
                         setEditingCost(false);
                       }}
@@ -486,9 +487,14 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
                 autoFocus
                 onChange={(e) => setCustomCostInput(e.target.value)}
                 onBlur={() => {
-                  const n = parseFloat(customCostInput);
-                  if (!isNaN(n) && n >= 0) {
-                    setCustomCost(n);
+                  if (customCostInput.trim() === '') {
+                    setCustomCost(0);
+                    setCustomCostInput('0');
+                  } else {
+                    const n = parseFloat(customCostInput);
+                    if (!isNaN(n) && n >= 0) {
+                      setCustomCost(n);
+                    }
                   }
                   setEditingCost(false);
                 }}
