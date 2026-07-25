@@ -589,7 +589,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v1.9.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.0.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

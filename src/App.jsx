@@ -35,6 +35,8 @@ import SettingsPage from './components/SettingsPage'
 import UserForm from './components/UserForm'
 import AnalyticsPage from './components/AnalyticsPage'
 import PullToRefresh from './components/PullToRefresh'
+import FeatsWidget from './components/FeatsWidget'
+import FeatsDrawer from './components/FeatsDrawer'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
@@ -65,6 +67,7 @@ function App() {
   const [cashoutUser_, setCashoutUser] = useState(null)
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
+  const [showFeatsDrawer, setShowFeatsDrawer] = useState(false)
 
   // --- Auth subscription ---
   useEffect(() => {
@@ -468,6 +471,9 @@ function App() {
         {/* Family Members */}
         <FamilyBar users={users} onUserClick={handleUserClick} />
 
+        {/* Feats & Task Generator Widget */}
+        <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />
+
         <section className="dashboard-section">
           <h2 className="section-title">Due today</h2>
           <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
@@ -519,6 +525,19 @@ function App() {
           user={editingUser}
           onSave={handleSaveUser}
           onCancel={() => { setShowUserForm(false); setEditingUser(null) }}
+        />
+      )}
+
+      {showFeatsDrawer && (
+        <FeatsDrawer
+          tasks={tasks}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
+          onAcceptTask={(drawnTask) => {
+            setShowFeatsDrawer(false)
+            handleCompleteTask(drawnTask)
+          }}
+          onClose={() => setShowFeatsDrawer(false)}
         />
       )}
     </div>

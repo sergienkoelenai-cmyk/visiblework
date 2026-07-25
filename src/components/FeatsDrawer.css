@@ -1,0 +1,288 @@
+/* ── FeatsDrawer ── */
+
+.feats-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feats-drawer-overlay--visible {
+  opacity: 1;
+}
+
+.feats-drawer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
+  max-width: 440px;
+  width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(30px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feats-drawer-overlay--visible .feats-drawer {
+  transform: translateY(0);
+}
+
+.feats-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.feats-drawer__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feats-drawer__close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.feats-drawer__close:hover {
+  color: var(--color-text);
+}
+
+/* ── Section labels ── */
+.feats-drawer__label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+/* ── Segment Buttons ── */
+.feats-drawer__segment-group {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.feats-drawer__segment-btn {
+  flex: 1;
+  padding: 10px 4px;
+  border: none;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.feats-drawer__segment-btn + .feats-drawer__segment-btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.feats-drawer__segment-btn--active {
+  background: var(--color-accent);
+  color: #ffffff;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.feats-drawer__roll-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #8b5cf6 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-accent);
+  transition: transform 0.15s ease, filter 0.15s ease;
+  margin-top: 6px;
+}
+
+.feats-drawer__roll-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.feats-drawer__roll-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── Result Card ── */
+.feats-drawer__result-card {
+  background: var(--color-surface-hover);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  animation: fadeIn var(--transition-fast) ease;
+}
+
+.feats-drawer__result-card--feat {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(239, 68, 68, 0.05) 100%);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+}
+
+.feats-drawer__result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feats-drawer__result-emoji {
+  font-size: 32px;
+}
+
+.feats-drawer__result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.feats-drawer__result-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.feats-drawer__result-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.feats-drawer__tag {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+}
+
+.feats-drawer__tag--feat {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.feats-drawer__tag--effort {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.feats-drawer__result-price {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-euro);
+  text-align: right;
+}
+
+/* ── Actions ── */
+.feats-drawer__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.feats-drawer__btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.feats-drawer__btn--accept {
+  background: var(--color-accent);
+  color: white;
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.feats-drawer__btn--accept:hover {
+  background: var(--color-accent-hover);
+}
+
+.feats-drawer__btn--reroll {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.feats-drawer__btn--reroll:hover {
+  background: var(--color-surface-active);
+}
+
+/* ── Empty state ── */
+.feats-drawer__empty {
+  text-align: center;
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.feats-drawer__empty-emoji {
+  font-size: 40px;
+}
+
+.feats-drawer__empty-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
