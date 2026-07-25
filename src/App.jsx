@@ -495,7 +495,6 @@ function App() {
         <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />
 
         <section className="dashboard-section">
-          <h2 className="section-title">Due today</h2>
           <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
         </section>
 

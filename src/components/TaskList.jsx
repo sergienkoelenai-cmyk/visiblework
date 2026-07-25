@@ -91,14 +91,13 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
         </h3>
 
         {isExpanded && (
-          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
             {catTasks.map((task) => (
-              <TaskCard
+              <FavoriteTaskCard
                 key={task.id}
                 task={{ ...task, categoryEmoji: cat.emoji }}
                 baseRate={baseRate}
                 complexityMultipliers={complexityMultipliers}
-                statusLabel={task.status}
                 onComplete={onCompleteTask}
               />
             ))}
