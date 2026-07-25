@@ -20,26 +20,37 @@ const WEEKDAYS = [
   { key: 'SU', label: 'S' },
 ];
 
-export default function TaskForm({ task = null, categories = [], baseRate = 0.10, complexityMultipliers = null, onSave, onCancel }) {
+export default function TaskForm({
+  task = null,
+  categories = [],
+  baseRate = 0.10,
+  complexityMultipliers = null,
+  onSave,
+  onCancel,
+}) {
   const [visible, setVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [showDescription, setShowDescription] = useState(false);
   const [category, setCategory] = useState('');
 
   // Pricing state
   const [complexity, setComplexity] = useState(COMPLEXITY.LOW);
   const [durationInput, setDurationInput] = useState('15');
   const [customCost, setCustomCost] = useState(null); // null = auto
-  const [editingCost, setEditingCost] = useState(false); // show inline input
+  const [editingCost, setEditingCost] = useState(false);
   const [customCostInput, setCustomCostInput] = useState('');
 
-  const durationMinutes = durationInput === '' ? 0 : (parseInt(durationInput, 10) || 0);
+  const durationMinutes = durationInput === '' ? 0 : parseInt(durationInput, 10) || 0;
 
   // Icon
   const [icon, setIcon] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // New Recurrence States
+  // Progressive Disclosure: Schedule state
+  const [showScheduleEditor, setShowScheduleEditor] = useState(false);
+
+  // Recurrence States
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDateType, setEndDateType] = useState('never');
   const [endDateValue, setEndDateValue] = useState(new Date().toISOString().slice(0, 10));
@@ -61,6 +72,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
     if (task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
+      if (task.description) setShowDescription(true);
       setCategory(task.category || '');
 
       // Pricing fields
@@ -91,13 +103,17 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
       setCustomUnit(parsed.customUnit);
       setFromLastCompletion(parsed.fromLastCompletion);
       setIsCritical(!!task.is_critical);
+
+      if (parsed.repeatFrequency !== 'none' || parsed.startDate !== new Date().toISOString().slice(0, 10)) {
+        setShowScheduleEditor(true);
+      }
     }
     requestAnimationFrame(() => setVisible(true));
   }, [task]);
 
   const toggleWeeklyDay = (dayKey) => {
     if (weeklyDays.includes(dayKey)) {
-      setWeeklyDays(weeklyDays.filter(d => d !== dayKey));
+      setWeeklyDays(weeklyDays.filter((d) => d !== dayKey));
     } else {
       setWeeklyDays([...weeklyDays, dayKey]);
     }
@@ -123,7 +139,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
     let recurrence = null;
     if (computedType === 'recurring') {
-      const parsedInterval = customInterval === '' ? 0 : (parseInt(customInterval, 10) || 0);
+      const parsedInterval = customInterval === '' ? 0 : parseInt(customInterval, 10) || 0;
       if (repeatFrequency === 'custom' && fromLastCompletion) {
         recurrence = {
           mode: 'interval_from_completion',
@@ -152,7 +168,6 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
     let nextDueDate = null;
 
-    // Check if configuration did not change to preserve existing nextDueDate
     if (task && computedType === task.type) {
       const oldStr = typeof task.recurrence === 'string' ? task.recurrence : JSON.stringify(task.recurrence);
       const newStr = typeof recurrence === 'string' ? recurrence : JSON.stringify(recurrence);
@@ -161,22 +176,22 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
       }
     }
 
-    // Recalculate if it is a new task or if configuration changed
-    if (nextDueDate === null) {
+    if (!nextDueDate) {
       if (computedType === 'always-available') {
-        nextDueDate = new Date();
+        nextDueDate = null;
       } else if (computedType === 'recurring') {
-        const lastComp = task && task.lastCompletedAt
-          ? (task.lastCompletedAt.toDate ? task.lastCompletedAt.toDate() : new Date(task.lastCompletedAt))
+        const lastComp = task?.lastCompletedAt?.toDate
+          ? task.lastCompletedAt.toDate()
+          : task?.lastCompletedAt
+          ? new Date(task.lastCompletedAt)
           : null;
 
         if (repeatFrequency === 'custom' && fromLastCompletion) {
+          const val = customInterval === '' ? 0 : parseInt(customInterval, 10) || 0;
           if (lastComp) {
-            const val = customInterval === '' ? 0 : (parseInt(customInterval, 10) || 0);
-            const unit = customUnit;
-            if (unit === 'weeks') {
+            if (customUnit === 'weeks') {
               nextDueDate = new Date(lastComp.getTime() + val * 7 * 24 * 60 * 60 * 1000);
-            } else if (unit === 'months') {
+            } else if (customUnit === 'months') {
               const d = new Date(lastComp);
               d.setMonth(d.getMonth() + val);
               nextDueDate = d;
@@ -217,7 +232,6 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
           }
         }
       } else {
-        // Ad-hoc tasks start on the chosen start date
         const [year, month, day] = startDate.split('-').map(Number);
         nextDueDate = new Date(year, month - 1, day);
       }
@@ -230,7 +244,6 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
       complexity,
       duration_minutes: durationMinutes,
       custom_cost: customCost,
-      // Compute and persist the effective price so legacy readers still work
       price: getTaskBaseCost(
         { complexity, duration_minutes: durationMinutes, custom_cost: customCost },
         baseRate,
@@ -252,98 +265,85 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
     setTimeout(() => onCancel?.(), 300);
   };
 
-  const recurrenceSummary = useMemo(() => {
+  const scheduleSummaryText = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const isToday = startDate === todayStr;
+    const dateText = isToday ? 'Starts today' : `Starts ${startDate}`;
+
     if (repeatFrequency === 'none') {
-      const [year, month, day] = startDate.split('-').map(Number);
-      const startD = new Date(year, month - 1, day);
-      const startStr = startD.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-      return `One-time task scheduled for ${startStr}.`;
+      return `${dateText}, no repeat`;
     }
     if (repeatFrequency === 'always') {
-      return 'Always available task (can be completed multiple times at any time).';
+      return 'Always available task';
     }
-    if (repeatFrequency === 'custom' && fromLastCompletion) {
-      const [year, month, day] = startDate.split('-').map(Number);
-      const startD = new Date(year, month - 1, day);
-      const startStr = startD.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-      return `This task will repeat every ${customInterval} ${customUnit} after each completion starting ${startStr}.`;
+    if (repeatFrequency === 'daily') {
+      return `${dateText}, repeats daily`;
     }
-
-    try {
-      const rule = generateRRule({
-        startDate,
-        endDateType,
-        endDateValue,
-        endCountValue,
-        repeatFrequency,
-        weeklyDays,
-        monthlyStrategy,
-        monthlyDayOfMonth,
-        monthlyDayOfWeekPos,
-        monthlyDayOfWeekDay,
-        customInterval,
-        customUnit,
-      });
-
-      if (!rule) return 'Recurring schedule config error.';
-
-      const [year, month, day] = startDate.split('-').map(Number);
-      const startD = new Date(year, month - 1, day);
-      const startStr = startD.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-      
-      return `This task will run ${rule.toText()} starting ${startStr}.`;
-    } catch (e) {
-      return 'Calculating schedule summary…';
+    if (repeatFrequency === 'weekly') {
+      return `${dateText}, repeats weekly`;
     }
-  }, [
-    startDate,
-    endDateType,
-    endDateValue,
-    endCountValue,
-    repeatFrequency,
-    weeklyDays,
-    monthlyStrategy,
-    monthlyDayOfMonth,
-    monthlyDayOfWeekPos,
-    monthlyDayOfWeekDay,
-    customInterval,
-    customUnit,
-    fromLastCompletion,
-  ]);
+    if (repeatFrequency === 'monthly') {
+      return `${dateText}, repeats monthly`;
+    }
+    return `${dateText}, custom schedule`;
+  }, [startDate, repeatFrequency]);
+
+  const calculatedCost = getTaskBaseCost(
+    { complexity, duration_minutes: durationMinutes, custom_cost: customCost },
+    baseRate,
+    complexityMultipliers
+  );
 
   return (
-    <div 
-      className={`task-form-overlay ${visible ? 'task-form-overlay--visible' : ''}`} 
+    <div
+      className={`task-form-overlay ${visible ? 'task-form-overlay--visible' : ''}`}
       onClick={handleClose}
-      onTouchStart={e => e.stopPropagation()}
-      onTouchMove={e => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
     >
-      <form className="task-form" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <h2 className="task-form__title">{task ? 'Edit Task' : 'New Task'}</h2>
+      <form
+        className="task-form task-form--compact"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        {/* Top Header */}
+        <div className="task-form__header">
+          <h2 className="task-form__title-text">
+            {task ? 'Edit Task' : 'New Task'}
+          </h2>
+          <button
+            type="button"
+            className="task-form__close-btn"
+            onClick={handleClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
 
-        {/* Icon and Title */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ position: 'relative' }}>
-            <label className="task-form__label">
-              Icon
-              <button 
-                type="button"
-                className="task-form__input"
-                style={{ width: '48px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', cursor: 'pointer', padding: 0 }}
-                onClick={(e) => { e.preventDefault(); setShowEmojiPicker(prev => !prev); }}
-              >
-                {icon || '📋'}
-              </button>
-            </label>
+        {/* 1. Main Row: Icon Picker + Title */}
+        <div className="task-form__icon-title-row">
+          <div className="task-form__icon-wrapper">
+            <button
+              type="button"
+              className="task-form__icon-btn"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowEmojiPicker((prev) => !prev);
+              }}
+              title="Choose Icon"
+            >
+              {icon || '📋'}
+            </button>
             {showEmojiPicker && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 100, marginTop: '4px' }}>
-                <EmojiPicker 
+              <div className="task-form__emoji-popover">
+                <EmojiPicker
                   onEmojiClick={(emojiData) => {
                     setIcon(emojiData.emoji);
                     setShowEmojiPicker(false);
                   }}
-                  width={280}
-                  height={350}
+                  width={270}
+                  height={320}
                   lazyLoadEmojis={true}
                   searchDisabled={true}
                   skinTonesDisabled={true}
@@ -352,432 +352,331 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
             )}
           </div>
 
-          <label className="task-form__label" style={{ flex: 1 }}>
-            Title
+          <div className="task-form__title-field">
             <input
-              className={`task-form__input ${errors.title ? 'task-form__input--error' : ''}`}
+              className={`task-form__input ${
+                errors.title ? 'task-form__input--error' : ''
+              }`}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Vacuum living room"
+              autoFocus
             />
-            {errors.title && <span className="task-form__error">{errors.title}</span>}
-          </label>
+            {errors.title && (
+              <span className="task-form__error">{errors.title}</span>
+            )}
+          </div>
         </div>
 
-        {/* Description */}
-        <label className="task-form__label">
-          Description <span className="task-form__optional">(optional)</span>
-          <textarea
-            className="task-form__textarea"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Any extra details…"
-          />
-        </label>
+        {/* 2. Category & Description Toggle Row */}
+        <div className="task-form__category-row">
+          <select
+            className="task-form__select task-form__select--category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Select category…</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.emoji} {cat.label}
+              </option>
+            ))}
+          </select>
 
-        {/* Category row */}
-        <div className="task-form__row">
-          {/* Category */}
-          <label className="task-form__label">
-            Category
-            <select className="task-form__select" value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Select category…</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.emoji} {cat.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* Pricing section */}
-        <div className="task-form__pricing-section">
-          {/* Complexity */}
-          <div>
-            <div className="task-form__pricing-label">Effort / Complexity</div>
-            <div className="task-form__segment-group">
-              {Object.values(COMPLEXITY).map((val) => {
-                const info = COMPLEXITY_LABELS[val];
-                const active = complexity === val;
-                return (
-                  <button
-                    key={val}
-                    type="button"
-                    className={`task-form__segment-btn task-form__segment-btn--${val.toLowerCase()} ${active ? 'task-form__segment-btn--active' : ''}`}
-                    onClick={() => { setComplexity(val); setCustomCost(null); setEditingCost(false); }}
-                  >
-                    <span className="task-form__segment-emoji">{info.emoji}</span>
-                    <span className="task-form__segment-label">{info.label}</span>
-                    <span className="task-form__segment-hint">{info.hint}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Duration */}
-          <div>
-            <div className="task-form__pricing-label">Duration (minutes)</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                className="task-form__input"
-                value={durationInput}
-                onChange={(e) => {
-                  setDurationInput(e.target.value);
-                  setCustomCost(null);
-                  setEditingCost(false);
-                }}
-                placeholder="0"
-                style={{ fontWeight: 600 }}
-              />
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {DURATION_PRESETS.map((preset) => {
-                  const active = durationMinutes === preset.value;
-                  return (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      className={`task-form__weekday-pill ${active ? 'task-form__weekday-pill--active' : ''}`}
-                      style={{ width: 'auto', minWidth: '44px', height: '32px', borderRadius: 'var(--radius-full)', padding: '0 10px' }}
-                      onClick={() => {
-                        setDurationInput(String(preset.value));
-                        setCustomCost(null);
-                        setEditingCost(false);
-                      }}
-                    >
-                      {preset.emoji} {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Cost badge */}
-          {!editingCost ? (
-            <div className="task-form__cost-badge">
-              <span className="task-form__cost-value">
-                €{getTaskBaseCost({ complexity, duration_minutes: durationMinutes, custom_cost: customCost }, baseRate, complexityMultipliers).toFixed(2)}
-              </span>
-              <span className={`task-form__cost-tag ${customCost !== null ? 'task-form__cost-tag--custom' : ''}`}>
-                {customCost !== null ? 'custom' : 'auto'}
-              </span>
-              <button
-                type="button"
-                className="task-form__cost-edit-btn"
-                onClick={() => {
-                  setCustomCostInput(String(getTaskBaseCost({ complexity, duration_minutes: durationMinutes, custom_cost: customCost }, baseRate, complexityMultipliers)));
-                  setEditingCost(true);
-                }}
-              >
-                ✏️ Edit
-              </button>
-            </div>
-          ) : (
-            <div className="task-form__custom-cost-row">
-              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="task-form__input"
-                value={customCostInput}
-                autoFocus
-                onChange={(e) => setCustomCostInput(e.target.value)}
-                onBlur={() => {
-                  if (customCostInput.trim() === '') {
-                    setCustomCost(0);
-                    setCustomCostInput('0');
-                  } else {
-                    const n = parseFloat(customCostInput);
-                    if (!isNaN(n) && n >= 0) {
-                      setCustomCost(n);
-                    }
-                  }
-                  setEditingCost(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-                  if (e.key === 'Escape') { setEditingCost(false); }
-                }}
-              />
-              <button
-                type="button"
-                className="task-form__custom-cost-reset"
-                onClick={() => { setCustomCost(null); setCustomCostInput(''); setEditingCost(false); }}
-              >
-                🔄 Reset to auto
-              </button>
-            </div>
+          {!showDescription && !description && (
+            <button
+              type="button"
+              className="task-form__add-desc-btn"
+              onClick={() => setShowDescription(true)}
+            >
+              + Add Description
+            </button>
           )}
         </div>
 
-        {/* CRITICAL TASK TOGGLE */}
-        <div className="task-form__card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 16px', border: isCritical ? '1px solid rgba(255, 82, 82, 0.4)' : '1px solid var(--color-border)', background: isCritical ? 'rgba(255, 82, 82, 0.06)' : 'var(--color-surface)', borderRadius: 'var(--radius-md)', transition: 'all 0.2s ease' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: isCritical ? 'var(--color-danger)' : 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              🛡️ Critical Deadline / Important
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Appears in Critical Focus when due
-            </span>
-          </div>
-          <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', flexShrink: 0, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={isCritical}
-              onChange={(e) => setIsCritical(e.target.checked)}
-              style={{ opacity: 0, width: 0, height: 0 }}
+        {/* Expanded Description Input */}
+        {(showDescription || description) && (
+          <div className="task-form__desc-container">
+            <textarea
+              className="task-form__textarea task-form__textarea--compact"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="Any extra details…"
             />
-            <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isCritical ? '#ff5252' : 'var(--color-border)', transition: '.2s', borderRadius: '24px' }}>
-              <span style={{ position: 'absolute', height: '18px', width: '18px', left: isCritical ? '22px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.2s', borderRadius: '50%' }} />
-            </span>
-          </label>
+            <button
+              type="button"
+              className="task-form__desc-hide-btn"
+              onClick={() => {
+                setDescription('');
+                setShowDescription(false);
+              }}
+              title="Remove description"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* 3. Effort / Complexity Picker */}
+        <div className="task-form__section">
+          <div className="task-form__section-label">EFFORT LEVEL</div>
+          <div className="task-form__segment-group task-form__segment-group--compact">
+            {Object.values(COMPLEXITY).map((val) => {
+              const info = COMPLEXITY_LABELS[val];
+              const active = complexity === val;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  className={`task-form__segment-btn task-form__segment-btn--${val.toLowerCase()} ${
+                    active ? 'task-form__segment-btn--active' : ''
+                  }`}
+                  onClick={() => {
+                    setComplexity(val);
+                    setCustomCost(null);
+                    setEditingCost(false);
+                  }}
+                >
+                  <span className="task-form__segment-emoji">{info.emoji}</span>
+                  <span className="task-form__segment-label">{info.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* PROGRESSIVE RECURRENCE EDITOR */}
-        <div className="task-form__recurrence-section">
-          {/* Row 1: Start date & Ends */}
-          <div className="task-form__row">
-            <label className="task-form__label">
-              Start date
-              <input
-                type="date"
-                className="task-form__input"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </label>
-
-            {repeatFrequency !== 'none' && repeatFrequency !== 'always' && (
-              <label className="task-form__label">
-                Ends
-                <select
-                  className="task-form__select"
-                  value={endDateType}
-                  onChange={(e) => setEndDateType(e.target.value)}
+        {/* 4. Duration & Inlined Auto-Cost Row */}
+        <div className="task-form__section">
+          <div className="task-form__section-header-inline">
+            <span className="task-form__section-label">DURATION & REWARD</span>
+            {!editingCost ? (
+              <div className="task-form__cost-chip">
+                <span className="task-form__cost-chip-value">
+                  €{calculatedCost.toFixed(2)}
+                </span>
+                <span
+                  className={`task-form__cost-chip-tag ${
+                    customCost !== null ? 'task-form__cost-chip-tag--custom' : ''
+                  }`}
                 >
-                  <option value="never">Never ends</option>
-                  <option value="date">On date</option>
-                  <option value="count">After occurrences</option>
-                </select>
-              </label>
+                  {customCost !== null ? 'custom' : 'auto'}
+                </span>
+                <button
+                  type="button"
+                  className="task-form__cost-chip-edit"
+                  onClick={() => {
+                    setCustomCostInput(String(calculatedCost));
+                    setEditingCost(true);
+                  }}
+                >
+                  ✏️
+                </button>
+              </div>
+            ) : (
+              <div className="task-form__cost-inline-edit">
+                <span>€</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="task-form__input task-form__cost-input"
+                  value={customCostInput}
+                  autoFocus
+                  onChange={(e) => setCustomCostInput(e.target.value)}
+                  onBlur={() => {
+                    if (customCostInput.trim() === '') {
+                      setCustomCost(0);
+                    } else {
+                      const n = parseFloat(customCostInput);
+                      if (!isNaN(n) && n >= 0) setCustomCost(n);
+                    }
+                    setEditingCost(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.target.blur();
+                    }
+                    if (e.key === 'Escape') setEditingCost(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="task-form__cost-reset-btn"
+                  onClick={() => {
+                    setCustomCost(null);
+                    setCustomCostInput('');
+                    setEditingCost(false);
+                  }}
+                  title="Reset to auto"
+                >
+                  🔄
+                </button>
+              </div>
             )}
           </div>
 
-          {/* Conditional Ends value fields */}
-          {repeatFrequency !== 'none' && repeatFrequency !== 'always' && endDateType === 'date' && (
-            <label className="task-form__label">
-              End Date
-              <input
-                type="date"
-                className="task-form__input"
-                value={endDateValue}
-                onChange={(e) => setEndDateValue(e.target.value)}
-              />
-            </label>
-          )}
+          <div className="task-form__pills-row">
+            {DURATION_PRESETS.map((preset) => {
+              const active = durationMinutes === preset.value;
+              return (
+                <button
+                  key={preset.value}
+                  type="button"
+                  className={`task-form__duration-pill ${
+                    active ? 'task-form__duration-pill--active' : ''
+                  }`}
+                  onClick={() => {
+                    setDurationInput(String(preset.value));
+                    setCustomCost(null);
+                    setEditingCost(false);
+                  }}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          {repeatFrequency !== 'none' && repeatFrequency !== 'always' && endDateType === 'count' && (
-            <label className="task-form__label">
-              Number of occurrences
-              <input
-                type="number"
-                min="0"
-                className="task-form__input"
-                value={endCountValue}
-                onChange={(e) => setEndCountValue(e.target.value)}
-                placeholder="0"
-              />
-            </label>
-          )}
-
-          {/* Row 2: Repeat frequency */}
-          <label className="task-form__label">
-            Repeat Frequency
-            <select
-              className="task-form__select"
-              value={repeatFrequency}
-              onChange={(e) => {
-                const freq = e.target.value;
-                setRepeatFrequency(freq);
-                if (freq === 'weekly' && weeklyDays.length === 0) {
-                  const todayDay = new Date().getDay();
-                  const weekdayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-                  setWeeklyDays([weekdayMap[todayDay]]);
-                }
-              }}
+        {/* 5. Schedule & Critical Priority (Progressive Disclosure) */}
+        <div className="task-form__section">
+          {/* Schedule Compact Summary Row */}
+          <div className="task-form__summary-row">
+            <span className="task-form__summary-text">
+              📅 {scheduleSummaryText}
+            </span>
+            <button
+              type="button"
+              className="task-form__edit-summary-btn"
+              onClick={() => setShowScheduleEditor((prev) => !prev)}
             >
-              <option value="none">Does not repeat (One-time)</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="always">Always available</option>
-              <option value="custom">Custom...</option>
-            </select>
-          </label>
+              {showScheduleEditor ? 'Done' : 'Edit'}
+            </button>
+          </div>
 
-          {/* Row 3+: Dynamic Containers */}
-          {repeatFrequency === 'custom' && (
-            <div className="task-form__dynamic-container task-form__card">
+          {/* Collapsible Schedule Editor */}
+          {showScheduleEditor && (
+            <div className="task-form__schedule-editor">
               <div className="task-form__row">
                 <label className="task-form__label">
-                  Repeat every
+                  Start date
                   <input
-                    type="number"
-                    min="0"
+                    type="date"
                     className="task-form__input"
-                    value={customInterval}
-                    onChange={(e) => setCustomInterval(e.target.value)}
-                    placeholder="0"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                   />
                 </label>
+
                 <label className="task-form__label">
-                  Unit
+                  Repeat
                   <select
                     className="task-form__select"
-                    value={customUnit}
-                    onChange={(e) => {
-                      const unit = e.target.value;
-                      setCustomUnit(unit);
-                      if (unit === 'weeks' && weeklyDays.length === 0) {
-                        const todayDay = new Date().getDay();
-                        const weekdayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-                        setWeeklyDays([weekdayMap[todayDay]]);
-                      }
-                    }}
+                    value={repeatFrequency}
+                    onChange={(e) => setRepeatFrequency(e.target.value)}
                   >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
+                    <option value="none">Does not repeat</option>
+                    <option value="always">Always available</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="custom">Custom interval</option>
                   </select>
                 </label>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  id="from-last-completion"
-                  checked={fromLastCompletion}
-                  onChange={(e) => setFromLastCompletion(e.target.checked)}
-                  style={{ width: 'auto', minHeight: 'auto', cursor: 'pointer' }}
-                />
-                <label htmlFor="from-last-completion" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
-                  from last completion
-                </label>
-              </div>
-            </div>
-          )}
 
-          {/* Weekly configuration (shown for 'weekly' or 'custom' with 'weeks' unit) */}
-          {(repeatFrequency === 'weekly' || (repeatFrequency === 'custom' && customUnit === 'weeks')) && (
-            <div className="task-form__dynamic-container task-form__card">
-              <label className="task-form__label">
-                Repeat on
-                <div className="task-form__weekdays">
-                  {WEEKDAYS.map(d => {
-                    const active = weeklyDays.includes(d.key);
-                    return (
-                      <button
-                        key={d.key}
-                        type="button"
-                        className={`task-form__weekday-pill ${active ? 'task-form__weekday-pill--active' : ''}`}
-                        onClick={() => toggleWeeklyDay(d.key)}
-                      >
-                        {d.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </label>
-            </div>
-          )}
-
-          {/* Monthly configuration (shown for 'monthly' or 'custom' with 'months' unit) */}
-          {(repeatFrequency === 'monthly' || (repeatFrequency === 'custom' && customUnit === 'months')) && (
-            <div className="task-form__dynamic-container task-form__card">
-              <div className="task-form__row">
-                <label className="task-form__label">
-                  Monthly strategy
-                  <select
-                    className="task-form__select"
-                    value={monthlyStrategy}
-                    onChange={(e) => setMonthlyStrategy(e.target.value)}
-                  >
-                    <option value="day_of_month">On specific day of month</option>
-                    <option value="day_of_week">On specific weekday</option>
-                  </select>
-                </label>
-
-                {monthlyStrategy === 'day_of_month' ? (
-                  <label className="task-form__label">
-                    Day of month
-                    <select
-                      className="task-form__select"
-                      value={monthlyDayOfMonth}
-                      onChange={(e) => setMonthlyDayOfMonth(parseInt(e.target.value, 10))}
+              {repeatFrequency === 'weekly' && (
+                <div className="task-form__weekly-group">
+                  {WEEKDAYS.map((d) => (
+                    <button
+                      key={d.key}
+                      type="button"
+                      className={`task-form__weekday-pill ${
+                        weeklyDays.includes(d.key)
+                          ? 'task-form__weekday-pill--active'
+                          : ''
+                      }`}
+                      onClick={() => toggleWeeklyDay(d.key)}
                     >
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <div className="task-form__row" style={{ flex: 1, gap: '8px' }}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {repeatFrequency === 'custom' && (
+                <div className="task-form__custom-interval-box">
+                  <div className="task-form__row">
                     <label className="task-form__label">
-                      Position
-                      <select
-                        className="task-form__select"
-                        value={monthlyDayOfWeekPos}
-                        onChange={(e) => setMonthlyDayOfWeekPos(parseInt(e.target.value, 10))}
-                      >
-                        <option value={1}>First</option>
-                        <option value={2}>Second</option>
-                        <option value={3}>Third</option>
-                        <option value={4}>Fourth</option>
-                        <option value={-1}>Last</option>
-                      </select>
+                      Every
+                      <input
+                        type="number"
+                        min="1"
+                        className="task-form__input"
+                        value={customInterval}
+                        onChange={(e) => setCustomInterval(e.target.value)}
+                      />
                     </label>
                     <label className="task-form__label">
-                      Weekday
+                      Unit
                       <select
                         className="task-form__select"
-                        value={monthlyDayOfWeekDay}
-                        onChange={(e) => setMonthlyDayOfWeekDay(e.target.value)}
+                        value={customUnit}
+                        onChange={(e) => setCustomUnit(e.target.value)}
                       >
-                        <option value="MO">Monday</option>
-                        <option value="TU">Tuesday</option>
-                        <option value="WE">Wednesday</option>
-                        <option value="TH">Thursday</option>
-                        <option value="FR">Friday</option>
-                        <option value="SA">Saturday</option>
-                        <option value="SU">Sunday</option>
+                        <option value="days">Days</option>
+                        <option value="weeks">Weeks</option>
+                        <option value="months">Months</option>
                       </select>
                     </label>
                   </div>
-                )}
-              </div>
+                  <label className="task-form__checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={fromLastCompletion}
+                      onChange={(e) => setFromLastCompletion(e.target.checked)}
+                    />
+                    <span>Schedule from completion date</span>
+                  </label>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Compact Inline Critical Priority Row */}
+          <div className="task-form__critical-inline-row">
+            <div className="task-form__critical-text-group">
+              <span className="task-form__critical-title">
+                🛡️ Critical Deadline
+              </span>
+              <span className="task-form__critical-subtitle">
+                Appears in Critical Focus when due
+              </span>
+            </div>
+            <label className="task-form__switch">
+              <input
+                type="checkbox"
+                checked={isCritical}
+                onChange={(e) => setIsCritical(e.target.checked)}
+              />
+              <span className="task-form__switch-slider" />
+            </label>
+          </div>
         </div>
 
-        {/* Dynamic human readable summary */}
-        <div className="task-form__summary">
-          <span className="task-form__summary-label">Schedule Summary</span>
-          <p className="task-form__summary-text">{recurrenceSummary}</p>
-        </div>
-
-        {/* Actions */}
+        {/* 6. Fixed Footer Actions */}
         <div className="task-form__actions">
-          <button type="button" className="task-form__btn task-form__btn--cancel" onClick={handleClose}>
+          <button
+            type="button"
+            className="task-form__btn-cancel"
+            onClick={handleClose}
+          >
             Cancel
           </button>
-          <button type="submit" className="task-form__btn task-form__btn--save">
+          <button type="submit" className="btn btn-primary task-form__btn-submit">
             {task ? 'Save Changes' : 'Create Task'}
           </button>
         </div>
@@ -786,15 +685,14 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
   );
 }
 
-// ─── Helpers to map between Form State and RRule format ───────────────────
-
-function parseRRuleToState(rruleStr, taskType) {
-  const defaultState = {
+// ── Helpers for parsing RRule string ──
+function parseRRuleToState(recurrence, taskType) {
+  const defaults = {
     startDate: new Date().toISOString().slice(0, 10),
     endDateType: 'never',
     endDateValue: new Date().toISOString().slice(0, 10),
     endCountValue: '10',
-    repeatFrequency: 'none',
+    repeatFrequency: taskType === 'always-available' ? 'always' : 'none',
     weeklyDays: [],
     monthlyStrategy: 'day_of_month',
     monthlyDayOfMonth: new Date().getDate(),
@@ -802,163 +700,104 @@ function parseRRuleToState(rruleStr, taskType) {
     monthlyDayOfWeekDay: 'MO',
     customInterval: '1',
     customUnit: 'days',
+    fromLastCompletion: false,
   };
 
-  if (taskType === 'always-available') {
-    defaultState.repeatFrequency = 'always';
-    return defaultState;
-  }
-  if (taskType === 'ad-hoc' || !taskType) {
-    defaultState.repeatFrequency = 'none';
-    return defaultState;
+  if (!recurrence) return defaults;
+
+  if (typeof recurrence === 'object' && recurrence.mode === 'interval_from_completion') {
+    return {
+      ...defaults,
+      repeatFrequency: 'custom',
+      customInterval: String(recurrence.intervalValue || 1),
+      customUnit: recurrence.intervalUnit || 'days',
+      fromLastCompletion: true,
+      startDate: recurrence.startDate || defaults.startDate,
+    };
   }
 
-  // If there's no string but old object pattern is sent
-  if (!rruleStr) {
-    return defaultState;
-  }
-
-  // Handle completion relative recurrence object (mode: 'interval_from_completion')
-  if (typeof rruleStr === 'object' && rruleStr.mode === 'interval_from_completion') {
-    defaultState.repeatFrequency = 'custom';
-    defaultState.fromLastCompletion = true;
-    defaultState.customInterval = String(rruleStr.intervalValue ?? rruleStr.intervalDays ?? 1);
-    defaultState.customUnit = rruleStr.intervalUnit || 'days';
-    if (rruleStr.startDate) {
-      defaultState.startDate = rruleStr.startDate;
-    }
-    return defaultState;
-  }
+  const rruleString = typeof recurrence === 'string' ? recurrence : recurrence.rrule || null;
+  if (!rruleString) return defaults;
 
   try {
-    const ruleString = typeof rruleStr === 'string' ? rruleStr : (rruleStr.rrule || null);
-    if (!ruleString) return defaultState;
+    const rule = rrulestr(rruleString);
+    const options = rule.origOptions;
 
-    const rule = rrulestr(ruleString);
-    const options = rule.options;
+    let repeatFrequency = 'none';
+    if (options.freq === RRule.DAILY) repeatFrequency = 'daily';
+    else if (options.freq === RRule.WEEKLY) repeatFrequency = 'weekly';
+    else if (options.freq === RRule.MONTHLY) repeatFrequency = 'monthly';
 
+    let weeklyDays = [];
+    if (options.byweekday) {
+      const daysArr = Array.isArray(options.byweekday) ? options.byweekday : [options.byweekday];
+      weeklyDays = daysArr.map((d) => {
+        if (typeof d === 'number') {
+          return ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'][d];
+        }
+        return d.toString();
+      });
+    }
+
+    let startDate = defaults.startDate;
     if (options.dtstart) {
-      // options.dtstart is local/UTC Date, convert to YYYY-MM-DD
-      const d = new Date(options.dtstart);
-      defaultState.startDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
-    if (options.until) {
-      defaultState.endDateType = 'date';
-      const d = new Date(options.until);
-      defaultState.endDateValue = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    } else if (options.count) {
-      defaultState.endDateType = 'count';
-      defaultState.endCountValue = String(options.count);
+      startDate = options.dtstart.toISOString().slice(0, 10);
     }
 
-    const isCustom = options.interval > 1;
-    if (isCustom) {
-      defaultState.repeatFrequency = 'custom';
-      defaultState.customInterval = String(options.interval);
-      if (options.freq === RRule.DAILY) defaultState.customUnit = 'days';
-      if (options.freq === RRule.WEEKLY) defaultState.customUnit = 'weeks';
-      if (options.freq === RRule.MONTHLY) defaultState.customUnit = 'months';
-    } else {
-      if (options.freq === RRule.DAILY) defaultState.repeatFrequency = 'daily';
-      if (options.freq === RRule.WEEKLY) defaultState.repeatFrequency = 'weekly';
-      if (options.freq === RRule.MONTHLY) defaultState.repeatFrequency = 'monthly';
-    }
-
-    // Weekly days
-    const weekdayMap = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-    if (options.byweekday && options.byweekday.length > 0) {
-      defaultState.weeklyDays = options.byweekday.map(w => weekdayMap[w]);
-    }
-
-    // Monthly strategy
-    if (options.bymonthday && options.bymonthday.length > 0) {
-      defaultState.monthlyStrategy = 'day_of_month';
-      defaultState.monthlyDayOfMonth = options.bymonthday[0];
-    } else if (options.bynweekday && options.bynweekday.length > 0) {
-      defaultState.monthlyStrategy = 'day_of_week';
-      defaultState.monthlyDayOfWeekPos = options.bynweekday[0][1];
-      defaultState.monthlyDayOfWeekDay = weekdayMap[options.bynweekday[0][0]];
-    }
-
+    return {
+      ...defaults,
+      startDate,
+      repeatFrequency,
+      weeklyDays,
+    };
   } catch (e) {
-    console.error('Error parsing RRule string to state:', e);
+    return defaults;
   }
-
-  return defaultState;
 }
 
 function generateRRule(state) {
-  const {
-    startDate,
-    endDateType,
-    endDateValue,
-    endCountValue,
-    repeatFrequency,
-    weeklyDays,
-    monthlyStrategy,
-    monthlyDayOfMonth,
-    monthlyDayOfWeekPos,
-    monthlyDayOfWeekDay,
-    customInterval,
-    customUnit,
-  } = state;
-
-  if (repeatFrequency === 'none' || repeatFrequency === 'always') {
+  if (state.repeatFrequency === 'none' || state.repeatFrequency === 'always') {
     return null;
   }
 
-  const options = {};
+  const [year, month, day] = state.startDate.split('-').map(Number);
+  const dtstart = new Date(Date.UTC(year, month - 1, day));
 
-  // Frequency & Interval
-  if (repeatFrequency === 'daily') {
+  const options = {
+    dtstart,
+  };
+
+  if (state.repeatFrequency === 'daily') {
     options.freq = RRule.DAILY;
-    options.interval = 1;
-  } else if (repeatFrequency === 'weekly') {
+  } else if (state.repeatFrequency === 'weekly') {
     options.freq = RRule.WEEKLY;
-    options.interval = 1;
-    if (weeklyDays.length > 0) {
-      options.byweekday = weeklyDays.map(d => RRule[d]);
+    if (state.weeklyDays.length > 0) {
+      options.byweekday = state.weeklyDays.map((d) => {
+        switch (d) {
+          case 'MO': return RRule.MO;
+          case 'TU': return RRule.TU;
+          case 'WE': return RRule.WE;
+          case 'TH': return RRule.TH;
+          case 'FR': return RRule.FR;
+          case 'SA': return RRule.SA;
+          case 'SU': return RRule.SU;
+          default: return RRule.MO;
+        }
+      });
     }
-  } else if (repeatFrequency === 'monthly') {
+  } else if (state.repeatFrequency === 'monthly') {
     options.freq = RRule.MONTHLY;
-    options.interval = 1;
-    if (monthlyStrategy === 'day_of_month') {
-      options.bymonthday = [parseInt(monthlyDayOfMonth, 10)];
-    } else {
-      const day = RRule[monthlyDayOfWeekDay];
-      options.byweekday = [day.nth(parseInt(monthlyDayOfWeekPos, 10))];
-    }
-  } else if (repeatFrequency === 'custom') {
-    options.interval = parseInt(customInterval, 10) || 1;
-    if (customUnit === 'days') {
-      options.freq = RRule.DAILY;
-    } else if (customUnit === 'weeks') {
-      options.freq = RRule.WEEKLY;
-      if (weeklyDays.length > 0) {
-        options.byweekday = weeklyDays.map(d => RRule[d]);
-      }
-    } else if (customUnit === 'months') {
-      options.freq = RRule.MONTHLY;
-      if (monthlyStrategy === 'day_of_month') {
-        options.bymonthday = [parseInt(monthlyDayOfMonth, 10)];
-      } else {
-        const day = RRule[monthlyDayOfWeekDay];
-        options.byweekday = [day.nth(parseInt(monthlyDayOfWeekPos, 10))];
-      }
-    }
+  } else if (state.repeatFrequency === 'custom') {
+    const val = state.customInterval === '' ? 1 : parseInt(state.customInterval, 10) || 1;
+    options.interval = val;
+    if (state.customUnit === 'days') options.freq = RRule.DAILY;
+    else if (state.customUnit === 'weeks') options.freq = RRule.WEEKLY;
+    else if (state.customUnit === 'months') options.freq = RRule.MONTHLY;
   }
 
-  // Start Date (Anchor)
-  const [year, month, day] = startDate.split('-').map(Number);
-  options.dtstart = new Date(year, month - 1, day);
-
-  // End Date / Occurrences
-  if (endDateType === 'date' && endDateValue) {
-    const [eyear, emonth, eday] = endDateValue.split('-').map(Number);
-    options.until = new Date(eyear, emonth - 1, eday, 23, 59, 59);
-  } else if (endDateType === 'count') {
-    options.count = endCountValue === '' ? 0 : (parseInt(endCountValue, 10) || 0);
+  try {
+    return new RRule(options);
+  } catch (e) {
+    return null;
   }
-
-  return new RRule(options);
 }
