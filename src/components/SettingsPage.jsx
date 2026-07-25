@@ -212,6 +212,90 @@ export default function SettingsPage({
         </button>
       </header>
 
+      {/* ── Tasks ── */}
+      <section className="settings__section">
+        <div className="settings__section-header">
+          <h2 className="settings__section-title">Tasks</h2>
+        </div>
+
+        <div className="settings__tasks-categories">
+          {categories.map((cat) => {
+            const catGroup = groupedTasks[cat.id] || { adHoc: [], recurring: [], alwaysAvailable: [] };
+            const hasAdHoc = catGroup.adHoc.length > 0;
+            const hasRecurring = catGroup.recurring.length > 0;
+            const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
+            const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
+            const totalTasksInCat = catGroup.adHoc.length + catGroup.recurring.length + catGroup.alwaysAvailable.length;
+            const isCatExpanded = !!expandedTaskCats[cat.id];
+
+            return (
+              <div key={cat.id} className="settings__category-group">
+                <div
+                  className="settings__category-header-row"
+                  onClick={() => toggleTaskCat(cat.id)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: isCatExpanded ? '1px solid var(--color-border)' : 'none', paddingBottom: isCatExpanded ? '8px' : 0, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ display: 'inline-block', fontSize: '12px', transition: 'transform 0.2s ease', transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+                    <span className="settings__category-emoji">{cat.emoji}</span>
+                    {cat.label}
+                    <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+                      {totalTasksInCat}
+                    </span>
+                  </h3>
+                  <button
+                    className="settings__add-task-inline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedTaskCats(prev => ({ ...prev, [cat.id]: true }));
+                      onAddTaskInCategory?.(cat.id);
+                    }}
+                    type="button"
+                  >
+                    + Add Task
+                  </button>
+                </div>
+                
+                {isCatExpanded && (
+                  <div className="settings__category-content">
+                    {hasAlwaysAvailable && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">Always Available</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.alwaysAvailable.map(renderTaskItem)}
+                        </div>
+                      </div>
+                    )}
+
+                    {hasRecurring && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">Recurring</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.recurring.map(renderTaskItem)}
+                        </div>
+                      </div>
+                    )}
+
+                    {hasAdHoc && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">One-time</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.adHoc.map(renderTaskItem)}
+                        </div>
+                      </div>
+                    )}
+
+                    {!hasAnyTasks && (
+                      <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ── Economy Settings ── */}
       <section className="settings__section">
         <div
@@ -352,58 +436,63 @@ export default function SettingsPage({
               {users.length}
             </span>
           </h2>
-          <button
-            className="settings__add-btn"
-            onClick={(e) => { e.stopPropagation(); onAddUser?.(); }}
-            type="button"
-          >
-            + Add Member
-          </button>
         </div>
 
         {expandedSections.family && (
-          <div className="settings__members">
-            {users.map((user) => (
-              <div key={user.id} className="settings__member">
-                <Avatar user={user} size="md" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                className="settings__add-btn"
+                onClick={onAddUser}
+                type="button"
+                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
+              >
+                + Add Member
+              </button>
+            </div>
+            <div className="settings__members">
+              {users.map((user) => (
+                <div key={user.id} className="settings__member">
+                  <Avatar user={user} size="md" />
 
-                <div className="settings__member-info">
-                  <span className="settings__member-name">{user.name}</span>
-                  <div className="settings__member-stats">
-                    <span className="settings__stat">
-                      Balance: <strong className="settings__stat-balance">€{(user.balance ?? 0).toFixed(2)}</strong>
-                    </span>
-                    <span className="settings__stat">
-                      Earned: <span className="settings__stat-earned">€{(user.totalEarned ?? 0).toFixed(2)}</span>
-                    </span>
-                    <span className="settings__stat">
-                      Cashed out: <span className="settings__stat-cashout">€{(user.totalCashedOut ?? 0).toFixed(2)}</span>
-                    </span>
+                  <div className="settings__member-info">
+                    <span className="settings__member-name">{user.name}</span>
+                    <div className="settings__member-stats">
+                      <span className="settings__stat">
+                        Balance: <strong className="settings__stat-balance">€{(user.balance ?? 0).toFixed(2)}</strong>
+                      </span>
+                      <span className="settings__stat">
+                        Earned: <span className="settings__stat-earned">€{(user.totalEarned ?? 0).toFixed(2)}</span>
+                      </span>
+                      <span className="settings__stat">
+                        Cashed out: <span className="settings__stat-cashout">€{(user.totalCashedOut ?? 0).toFixed(2)}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="settings__member-actions">
+                    <button className="settings__icon-btn" onClick={() => onCashout?.(user)} title="Cash out" type="button">
+                      💰
+                    </button>
+                    <button className="settings__icon-btn" onClick={() => onEditUser?.(user)} title="Edit" type="button">
+                      ✏️
+                    </button>
+                    <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => setDeletingUser(user)} title="Delete" type="button">
+                      🗑️
+                    </button>
                   </div>
                 </div>
+              ))}
 
-                <div className="settings__member-actions">
-                  <button className="settings__icon-btn" onClick={() => onCashout?.(user)} title="Cash out" type="button">
-                    💰
-                  </button>
-                  <button className="settings__icon-btn" onClick={() => onEditUser?.(user)} title="Edit" type="button">
-                    ✏️
-                  </button>
-                  <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => setDeletingUser(user)} title="Delete" type="button">
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {users.length === 0 && (
-              <p className="settings__empty">No family members yet. Add someone to get started!</p>
-            )}
+              {users.length === 0 && (
+                <p className="settings__empty">No family members yet. Add someone to get started!</p>
+              )}
+            </div>
           </div>
         )}
       </section>
 
-      {/* ── Manage Categories ── */}
+      {/* ── Categories ── */}
       <section className="settings__section">
         <div
           className="settings__section-header"
@@ -412,28 +501,28 @@ export default function SettingsPage({
         >
           <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.categories ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
-            Manage Categories
+            Categories
             <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
               {categories.length}
             </span>
           </h2>
-          {!showAddCat && (
-            <button
-              className="settings__add-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAddCat(true);
-                setExpandedSections(prev => ({ ...prev, categories: true }));
-              }}
-              type="button"
-            >
-              + Add Category
-            </button>
-          )}
         </div>
 
         {expandedSections.categories && (
-          <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {!showAddCat && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <button
+                  className="settings__add-btn"
+                  onClick={() => setShowAddCat(true)}
+                  type="button"
+                  style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
+                >
+                  + Add Category
+                </button>
+              </div>
+            )}
+
             {showAddCat && (
               <form className="settings__cat-form" onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '8px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -497,92 +586,8 @@ export default function SettingsPage({
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
-      </section>
-
-      {/* ── Manage Tasks ── */}
-      <section className="settings__section">
-        <div className="settings__section-header">
-          <h2 className="settings__section-title">Manage Tasks</h2>
-        </div>
-
-        <div className="settings__tasks-categories">
-          {categories.map((cat) => {
-            const catGroup = groupedTasks[cat.id] || { adHoc: [], recurring: [], alwaysAvailable: [] };
-            const hasAdHoc = catGroup.adHoc.length > 0;
-            const hasRecurring = catGroup.recurring.length > 0;
-            const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
-            const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
-            const totalTasksInCat = catGroup.adHoc.length + catGroup.recurring.length + catGroup.alwaysAvailable.length;
-            const isCatExpanded = !!expandedTaskCats[cat.id];
-
-            return (
-              <div key={cat.id} className="settings__category-group">
-                <div
-                  className="settings__category-header-row"
-                  onClick={() => toggleTaskCat(cat.id)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: isCatExpanded ? '1px solid var(--color-border)' : 'none', paddingBottom: isCatExpanded ? '8px' : 0, cursor: 'pointer', userSelect: 'none' }}
-                >
-                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ display: 'inline-block', fontSize: '12px', transition: 'transform 0.2s ease', transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
-                    <span className="settings__category-emoji">{cat.emoji}</span>
-                    {cat.label}
-                    <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
-                      {totalTasksInCat}
-                    </span>
-                  </h3>
-                  <button
-                    className="settings__add-task-inline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedTaskCats(prev => ({ ...prev, [cat.id]: true }));
-                      onAddTaskInCategory?.(cat.id);
-                    }}
-                    type="button"
-                  >
-                    + Add Task
-                  </button>
-                </div>
-                
-                {isCatExpanded && (
-                  <div className="settings__category-content">
-                    {hasAlwaysAvailable && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">Always Available</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.alwaysAvailable.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {hasRecurring && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">Recurring</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.recurring.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {hasAdHoc && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">One-time</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.adHoc.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {!hasAnyTasks && (
-                      <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </section>
 
 
@@ -671,7 +676,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v2.1.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.1.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );
