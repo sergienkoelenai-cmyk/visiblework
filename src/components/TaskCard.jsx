@@ -55,7 +55,7 @@ function getLastCompletedText(task) {
   }
 }
 
-export default function TaskCard({ task, baseRate = 10, onComplete, statusLabel }) {
+export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers = null, onComplete, statusLabel }) {
   const status = statusLabel || 'upcoming';
 
   const classes = [
@@ -83,7 +83,7 @@ export default function TaskCard({ task, baseRate = 10, onComplete, statusLabel 
       </div>
 
       <div className="task-card__right">
-        <span className="task-card__price">€{getTaskBaseCost(task, baseRate).toFixed(2)}</span>
+        <span className="task-card__price">€{getTaskBaseCost(task, baseRate, complexityMultipliers).toFixed(2)}</span>
         {status !== 'upcoming' && (
           <span className={`task-card__status task-card__status--${status}`}>
             {(() => {

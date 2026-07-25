@@ -47,7 +47,8 @@ export default function SettingsPage({
   tasks = [],
   categories = [],
   completions = [],
-  baseRate = 10,
+  baseRate = 0.10,
+  complexityMultipliers = { LOW: 1.0, MEDIUM: 1.5, HIGH: 2.5 },
   onUpdateSettings,
   onAddUser,
   onEditUser,
@@ -73,12 +74,18 @@ export default function SettingsPage({
 
   // Economy settings local state
   const [baseRateInput, setBaseRateInput] = useState(String(baseRate));
+  const [lowMultInput, setLowMultInput] = useState(String(complexityMultipliers?.LOW ?? 1.0));
+  const [medMultInput, setMedMultInput] = useState(String(complexityMultipliers?.MEDIUM ?? 1.5));
+  const [highMultInput, setHighMultInput] = useState(String(complexityMultipliers?.HIGH ?? 2.5));
   const [baseRateSaved, setBaseRateSaved] = useState(false);
 
   // Keep input in sync if the prop changes from outside (e.g. another device)
   React.useEffect(() => {
     setBaseRateInput(String(baseRate));
-  }, [baseRate]);
+    setLowMultInput(String(complexityMultipliers?.LOW ?? 1.0));
+    setMedMultInput(String(complexityMultipliers?.MEDIUM ?? 1.5));
+    setHighMultInput(String(complexityMultipliers?.HIGH ?? 2.5));
+  }, [baseRate, complexityMultipliers]);
 
   // Group tasks by category and recurrence type
   const groupedTasks = useMemo(() => {
@@ -152,7 +159,7 @@ export default function SettingsPage({
           </span>
         <div className="settings__task-item-meta">
           <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
-          <span className="settings__task-item-price">€{getTaskBaseCost(task, baseRate).toFixed(2)}</span>
+          <span className="settings__task-item-price">€{getTaskBaseCost(task, baseRate, complexityMultipliers).toFixed(2)}</span>
         </div>
       </div>
       <div className="settings__task-item-actions">
@@ -190,51 +197,116 @@ export default function SettingsPage({
       {/* ── Economy Settings ── */}
       <section className="settings__section">
         <div className="settings__section-header">
-          <h2 className="settings__section-title">Economy</h2>
+          <h2 className="settings__section-title">Economy Settings</h2>
         </div>
-        <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
-            The <strong style={{ color: 'var(--color-text)' }}>Base Rate</strong> is the reward for a Low-complexity, 15-minute task.
-            All task costs are calculated as a multiple of this value.
+            Task reward formula: <strong style={{ color: 'var(--color-text)' }}>Base Rate × Effort Coefficient × Duration (minutes)</strong>
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
-            <input
-              id="base-rate-input"
-              type="number"
-              min="0.01"
-              step="0.01"
-              className="task-form__input"
-              value={baseRateInput}
-              onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
-              style={{ width: '90px', flex: 'none', fontWeight: 700, fontSize: '16px', textAlign: 'right' }}
-            />
-            <button
-              className="settings__add-btn"
-              type="button"
-              onClick={() => {
-                const n = parseFloat(baseRateInput);
-                if (!isNaN(n) && n > 0) {
-                  onUpdateSettings?.({ base_rate: n });
-                  setBaseRateSaved(true);
-                  setTimeout(() => setBaseRateSaved(false), 2000);
-                }
-              }}
-              style={{ minHeight: '38px', padding: '8px 16px' }}
-            >
-              {baseRateSaved ? '✓ Saved' : 'Save'}
-            </button>
+
+          {/* Base Rate */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+              Base Rate (per minute)
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
+              <input
+                type="number"
+                min="0.001"
+                step="0.01"
+                className="task-form__input"
+                value={baseRateInput}
+                onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
+                style={{ width: '100px', flex: 'none', fontWeight: 700, fontSize: '16px', textAlign: 'right' }}
+              />
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {[
-              { label: 'Low + 15m', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 1.0 * 1.0 * 100) / 100).toFixed(2)}` },
-              { label: 'Medium + 30m', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 1.5 * 1.8 * 100) / 100).toFixed(2)}` },
-              { label: 'High + 1h+', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 2.5 * 3.5 * 100) / 100).toFixed(2)}` },
-            ].map(ex => (
-              <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
-                {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.formula}</strong>
-              </span>
-            ))}
+
+          {/* Effort Coefficients */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+              Effort Coefficients
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟢 Low</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  className="task-form__input"
+                  value={lowMultInput}
+                  onChange={(e) => { setLowMultInput(e.target.value); setBaseRateSaved(false); }}
+                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟡 Medium</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  className="task-form__input"
+                  value={medMultInput}
+                  onChange={(e) => { setMedMultInput(e.target.value); setBaseRateSaved(false); }}
+                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🔴 High</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  className="task-form__input"
+                  value={highMultInput}
+                  onChange={(e) => { setHighMultInput(e.target.value); setBaseRateSaved(false); }}
+                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            className="settings__add-btn"
+            type="button"
+            onClick={() => {
+              const rate = parseFloat(baseRateInput);
+              const low = parseFloat(lowMultInput);
+              const med = parseFloat(medMultInput);
+              const high = parseFloat(highMultInput);
+              if (!isNaN(rate) && rate > 0 && !isNaN(low) && !isNaN(med) && !isNaN(high)) {
+                onUpdateSettings?.({
+                  base_rate: rate,
+                  complexity_multipliers: { LOW: low, MEDIUM: med, HIGH: high },
+                });
+                setBaseRateSaved(true);
+                setTimeout(() => setBaseRateSaved(false), 2000);
+              }
+            }}
+            style={{ minHeight: '40px', padding: '8px 20px', alignSelf: 'flex-start' }}
+          >
+            {baseRateSaved ? '✓ Saved Economy Settings' : 'Save Economy Settings'}
+          </button>
+
+          {/* Formula preview chips */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+            {(() => {
+              const r = parseFloat(baseRateInput) || 0;
+              const l = parseFloat(lowMultInput) || 1.0;
+              const m = parseFloat(medMultInput) || 1.5;
+              const h = parseFloat(highMultInput) || 2.5;
+              return [
+                { label: `Low (${l}×) + 5m`, cost: `€${(Math.round(r * l * 5 * 100) / 100).toFixed(2)}` },
+                { label: `Medium (${m}×) + 30m`, cost: `€${(Math.round(r * m * 30 * 100) / 100).toFixed(2)}` },
+                { label: `High (${h}×) + 60m`, cost: `€${(Math.round(r * h * 60 * 100) / 100).toFixed(2)}` },
+              ].map(ex => (
+                <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
+                  {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.cost}</strong>
+                </span>
+              ));
+            })()}
           </div>
         </div>
       </section>
@@ -517,7 +589,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v1.8.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v1.9.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

@@ -52,7 +52,10 @@ function App() {
   const [completions, setCompletions] = useState([])
   const [analyticsCompletions, setAnalyticsCompletions] = useState([])
   const [analyticsPeriod, setAnalyticsPeriod] = useState(null)
-  const [settings, setSettings] = useState({ base_rate: 10 })
+  const [settings, setSettings] = useState({
+    base_rate: 0.10,
+    complexity_multipliers: { LOW: 1.0, MEDIUM: 1.5, HIGH: 2.5 },
+  })
   const [page, setPage] = useState('dashboard') // 'dashboard' | 'settings' | 'analytics'
   
   // Modal states
@@ -191,9 +194,9 @@ function App() {
   }, [])
 
   const handleConfirmCompletion = useCallback(async (taskId, userId, multiplier = 1.0) => {
-    await completeTask(taskId, userId, settings.base_rate ?? 10, multiplier)
+    await completeTask(taskId, userId, settings.base_rate ?? 0.10, multiplier, settings.complexity_multipliers)
     setCompletingTask(null)
-  }, [settings.base_rate])
+  }, [settings.base_rate, settings.complexity_multipliers])
 
   const handleToggleFavorite = useCallback(async (taskId, isFavorite) => {
     try {
@@ -378,7 +381,8 @@ function App() {
           tasks={tasks}
           categories={categories}
           completions={completions}
-          baseRate={settings.base_rate ?? 10}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
           onUpdateSettings={handleUpdateSettings}
           onAddUser={() => { setEditingUser(null); setShowUserForm(true) }}
           onEditUser={handleEditUser}
@@ -466,12 +470,12 @@ function App() {
 
         <section className="dashboard-section">
           <h2 className="section-title">Due today</h2>
-          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 10} onCompleteTask={handleCompleteTask} showFavorites />
+          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
         </section>
 
         <section className="dashboard-section">
           <h2 className="section-title">Upcoming tasks</h2>
-          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 10} onCompleteTask={handleCompleteTask} />
+          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} />
         </section>
 
         {/* Full task list removed */}
@@ -483,7 +487,8 @@ function App() {
         <TaskCompletionOverlay
           task={completingTask}
           users={users}
-          baseRate={settings.base_rate ?? 10}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
           onConfirm={handleConfirmCompletion}
           onCancel={() => setCompletingTask(null)}
           onToggleFavorite={handleToggleFavorite}
@@ -494,7 +499,8 @@ function App() {
         <TaskForm
           task={editingTask}
           categories={categories}
-          baseRate={settings.base_rate ?? 10}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
           onSave={handleSaveTask}
           onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
         />

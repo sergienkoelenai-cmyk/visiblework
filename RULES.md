@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v1.9.0  | Configurable effort coefficients (Low/Med/High) in Settings, manual minute-based duration per task |
 | v1.8.1  | Allow fractional prices/base_rate (e.g. 0.75), rounded to 2 decimals |
 | v1.8.0  | Dynamic task pricing: complexity + duration segmented controls, completion multiplier, global base_rate |
 | v1.7.0  | Analytics page, pull-to-refresh, always-available task type |

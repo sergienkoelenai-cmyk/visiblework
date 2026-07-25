@@ -110,15 +110,20 @@ export function subscribeToUsers(callback) {
 //  SETTINGS
 // ═════════════════════════════════════════════════════════════════════════════
 
+const DEFAULT_SETTINGS = {
+  base_rate: 0.10,
+  complexity_multipliers: { LOW: 1.0, MEDIUM: 1.5, HIGH: 2.5 },
+};
+
 /**
  * Fetch global settings (one-time read).
  * Returns defaults if the document doesn't exist yet.
- * @returns {Promise<Object>} e.g. { base_rate: 10 }
+ * @returns {Promise<Object>}
  */
 export async function getSettings() {
   const snap = await getDoc(settingsDoc);
-  if (!snap.exists()) return { base_rate: 10 };
-  return snap.data();
+  if (!snap.exists()) return DEFAULT_SETTINGS;
+  return { ...DEFAULT_SETTINGS, ...snap.data() };
 }
 
 /**
@@ -136,7 +141,7 @@ export async function updateSettings(data) {
  */
 export function subscribeToSettings(callback) {
   return onSnapshot(settingsDoc, (snap) => {
-    callback(snap.exists() ? snap.data() : { base_rate: 10 });
+    callback(snap.exists() ? { ...DEFAULT_SETTINGS, ...snap.data() } : DEFAULT_SETTINGS);
   });
 }
 
@@ -174,6 +179,7 @@ export async function addTask(data) {
     description: data.description || '',
     price: data.price || 0,
     complexity: data.complexity || null,
+    duration_minutes: data.duration_minutes || null,
     estimated_time: data.estimated_time || null,
     custom_cost: data.custom_cost !== undefined ? data.custom_cost : null,
     category: data.category || '',
@@ -322,11 +328,12 @@ export async function getCashouts(userId) {
  *
  * @param {string} taskId - ID of the task being completed.
  * @param {string|string[]} userId - ID or IDs of the users who completed it.
- * @param {number} [baseRate=10] - Global base rate for dynamic pricing.
+ * @param {number} [baseRate=0.10] - Global base rate for dynamic pricing.
  * @param {number} [multiplier=1.0] - Completion-time reward multiplier.
+ * @param {Record<string, number>} [complexityMultipliers] - Custom effort multipliers.
  * @returns {Promise<{completionId: string}>}
  */
-export async function completeTask(taskId, userId, baseRate = 10, multiplier = 1.0) {
+export async function completeTask(taskId, userId, baseRate = 0.10, multiplier = 1.0, complexityMultipliers = null) {
   const isArray = Array.isArray(userId);
   const userIds = isArray ? userId : [userId];
   if (userIds.length === 0) throw new Error('At least one doer is required.');
@@ -361,7 +368,7 @@ export async function completeTask(taskId, userId, baseRate = 10, multiplier = 1
     });
 
     // ── Award money to the users (split if multiple) ─────────────────
-    const totalReward = calculateFinalReward(task, baseRate, multiplier);
+    const totalReward = calculateFinalReward(task, baseRate, multiplier, complexityMultipliers);
     const splitPrice = totalReward / userIds.length;
     let firstCompletionId = '';
 

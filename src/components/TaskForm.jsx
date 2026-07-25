@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import EmojiPicker from 'emoji-picker-react';
-import { RRule, rrulestr } from 'rrule';
 import {
   COMPLEXITY,
-  ESTIMATED_TIME,
   COMPLEXITY_LABELS,
-  TIME_LABELS,
+  DURATION_PRESETS,
+  getTaskDurationMinutes,
   getTaskBaseCost,
 } from '../data/pricing';
 import './TaskForm.css';
@@ -20,7 +17,7 @@ const WEEKDAYS = [
   { key: 'SU', label: 'S' },
 ];
 
-export default function TaskForm({ task = null, categories = [], baseRate = 10, onSave, onCancel }) {
+export default function TaskForm({ task = null, categories = [], baseRate = 0.10, complexityMultipliers = null, onSave, onCancel }) {
   const [visible, setVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -28,7 +25,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
 
   // Pricing state
   const [complexity, setComplexity] = useState(COMPLEXITY.LOW);
-  const [estimatedTime, setEstimatedTime] = useState(ESTIMATED_TIME.SHORT);
+  const [durationMinutes, setDurationMinutes] = useState(15);
   const [customCost, setCustomCost] = useState(null); // null = auto
   const [editingCost, setEditingCost] = useState(false); // show inline input
   const [customCostInput, setCustomCostInput] = useState('');
@@ -62,7 +59,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
 
       // Pricing fields
       setComplexity(task.complexity || COMPLEXITY.LOW);
-      setEstimatedTime(task.estimated_time || ESTIMATED_TIME.SHORT);
+      setDurationMinutes(getTaskDurationMinutes(task));
       if (task.custom_cost !== null && task.custom_cost !== undefined) {
         setCustomCost(task.custom_cost);
         setCustomCostInput(String(task.custom_cost));
@@ -223,12 +220,13 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
       description: description.trim(),
       category,
       complexity,
-      estimated_time: estimatedTime,
+      duration_minutes: durationMinutes,
       custom_cost: customCost,
       // Compute and persist the effective price so legacy readers still work
       price: getTaskBaseCost(
-        { complexity, estimated_time: estimatedTime, custom_cost: customCost },
-        baseRate
+        { complexity, duration_minutes: durationMinutes, custom_cost: customCost },
+        baseRate,
+        complexityMultipliers
       ),
       type: computedType,
       icon: icon || null,
@@ -413,24 +411,43 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
 
           {/* Duration */}
           <div>
-            <div className="task-form__pricing-label">Duration</div>
-            <div className="task-form__segment-group">
-              {Object.values(ESTIMATED_TIME).map((val) => {
-                const info = TIME_LABELS[val];
-                const active = estimatedTime === val;
-                return (
-                  <button
-                    key={val}
-                    type="button"
-                    className={`task-form__segment-btn ${active ? 'task-form__segment-btn--active' : ''}`}
-                    onClick={() => { setEstimatedTime(val); setCustomCost(null); setEditingCost(false); }}
-                  >
-                    <span className="task-form__segment-emoji">{info.emoji}</span>
-                    <span className="task-form__segment-label">{info.label}</span>
-                    <span className="task-form__segment-hint">{info.hint}</span>
-                  </button>
-                );
-              })}
+            <div className="task-form__pricing-label">Duration (minutes)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                className="task-form__input"
+                value={durationMinutes}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 1;
+                  setDurationMinutes(val);
+                  setCustomCost(null);
+                  setEditingCost(false);
+                }}
+                placeholder="e.g. 15"
+                style={{ fontWeight: 600 }}
+              />
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {DURATION_PRESETS.map((preset) => {
+                  const active = durationMinutes === preset.value;
+                  return (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      className={`task-form__weekday-pill ${active ? 'task-form__weekday-pill--active' : ''}`}
+                      style={{ width: 'auto', minWidth: '44px', height: '32px', borderRadius: 'var(--radius-full)', padding: '0 10px' }}
+                      onClick={() => {
+                        setDurationMinutes(preset.value);
+                        setCustomCost(null);
+                        setEditingCost(false);
+                      }}
+                    >
+                      {preset.emoji} {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -438,7 +455,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
           {!editingCost ? (
             <div className="task-form__cost-badge">
               <span className="task-form__cost-value">
-                €{getTaskBaseCost({ complexity, estimated_time: estimatedTime, custom_cost: customCost }, baseRate).toFixed(2)}
+                €{getTaskBaseCost({ complexity, duration_minutes: durationMinutes, custom_cost: customCost }, baseRate, complexityMultipliers).toFixed(2)}
               </span>
               <span className={`task-form__cost-tag ${customCost !== null ? 'task-form__cost-tag--custom' : ''}`}>
                 {customCost !== null ? 'custom' : 'auto'}
@@ -447,7 +464,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
                 type="button"
                 className="task-form__cost-edit-btn"
                 onClick={() => {
-                  setCustomCostInput(String(getTaskBaseCost({ complexity, estimated_time: estimatedTime, custom_cost: customCost }, baseRate)));
+                  setCustomCostInput(String(getTaskBaseCost({ complexity, duration_minutes: durationMinutes, custom_cost: customCost }, baseRate, complexityMultipliers)));
                   setEditingCost(true);
                 }}
               >

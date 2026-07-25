@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import TaskCard from './TaskCard';
 import './TaskList.css';
 
-export default function TaskList({ tasks = [], categories = [], baseRate = 10, onCompleteTask, showFavorites = false }) {
+export default function TaskList({ tasks = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
   // All categories start collapsed
   const [expandedCats, setExpandedCats] = useState({});
 
@@ -96,6 +96,7 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 10, o
                 key={task.id}
                 task={{ ...task, categoryEmoji: cat.emoji }}
                 baseRate={baseRate}
+                complexityMultipliers={complexityMultipliers}
                 statusLabel={task.status}
                 onComplete={onCompleteTask}
               />
@@ -138,6 +139,7 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 10, o
                   key={task.id}
                   task={{ ...task, categoryEmoji: catDetails.emoji }}
                   baseRate={baseRate}
+                  complexityMultipliers={complexityMultipliers}
                   statusLabel={task.status}
                   onComplete={onCompleteTask}
                 />

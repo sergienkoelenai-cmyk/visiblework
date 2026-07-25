@@ -13,7 +13,7 @@ const MULTIPLIER_META = [
   { value: 2.0,  variant: 'double', label: '2×',    desc: 'Double!' },
 ];
 
-export default function TaskCompletionOverlay({ task, users = [], baseRate = 10, onConfirm, onCancel, onToggleFavorite }) {
+export default function TaskCompletionOverlay({ task, users = [], baseRate = 0.10, complexityMultipliers = null, onConfirm, onCancel, onToggleFavorite }) {
   const [confirmed, setConfirmed] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
@@ -27,8 +27,8 @@ export default function TaskCompletionOverlay({ task, users = [], baseRate = 10,
   }, []);
 
   // Computed values
-  const baseCost = getTaskBaseCost(task, baseRate);
-  const finalReward = calculateFinalReward(task, baseRate, multiplier);
+  const baseCost = getTaskBaseCost(task, baseRate, complexityMultipliers);
+  const finalReward = calculateFinalReward(task, baseRate, multiplier, complexityMultipliers);
   const splitCount = isSplit && selectedUserIds.length > 0 ? selectedUserIds.length : 1;
   const perPersonReward = finalReward / splitCount;
 
@@ -128,7 +128,7 @@ export default function TaskCompletionOverlay({ task, users = [], baseRate = 10,
               <div className="tco__multiplier-label">Reward multiplier</div>
               <div className="tco__multiplier-row">
                 {MULTIPLIER_META.map((m) => {
-                  const reward = calculateFinalReward(task, baseRate, m.value);
+                  const reward = calculateFinalReward(task, baseRate, m.value, complexityMultipliers);
                   const active = multiplier === m.value;
                   return (
                     <button
