@@ -334,7 +334,7 @@ export async function getCashouts(userId) {
  * @param {Record<string, number>} [complexityMultipliers] - Custom effort multipliers.
  * @returns {Promise<{completionId: string}>}
  */
-export async function completeTask(taskId, userId, baseRate = 0.10, multiplier = 1.0, complexityMultipliers = null) {
+export async function completeTask(taskId, userId, baseRate = 0.10, multiplier = 1.0, complexityMultipliers = null, completedAtDate = null) {
   const isArray = Array.isArray(userId);
   const userIds = isArray ? userId : [userId];
   if (userIds.length === 0) throw new Error('At least one doer is required.');
@@ -354,7 +354,7 @@ export async function completeTask(taskId, userId, baseRate = 0.10, multiplier =
 
     const task = { id: taskSnap.id, ...taskSnap.data() };
     const users = userSnaps.map(snap => ({ id: snap.id, ...snap.data() }));
-    const now = new Date();
+    const now = completedAtDate instanceof Date && !isNaN(completedAtDate.getTime()) ? completedAtDate : new Date();
 
     // ── Calculate next due date using the scheduler ──────────────────
     const nextDueDate = calculateNextDueDate(task, now);

@@ -205,8 +205,8 @@ function App() {
     setCompletingTask(task)
   }, [])
 
-  const handleConfirmCompletion = useCallback(async (taskId, userId, multiplier = 1.0) => {
-    await completeTask(taskId, userId, settings.base_rate ?? 0.10, multiplier, settings.complexity_multipliers)
+  const handleConfirmCompletion = useCallback(async (taskId, userId, multiplier = 1.0, completedAtDate = null) => {
+    await completeTask(taskId, userId, settings.base_rate ?? 0.10, multiplier, settings.complexity_multipliers, completedAtDate)
     setCompletingTask(null)
   }, [settings.base_rate, settings.complexity_multipliers])
 
