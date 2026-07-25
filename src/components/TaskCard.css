@@ -65,23 +65,19 @@
 
 .task-card__meta {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.task-card__recurring {
-  color: var(--color-accent);
-  font-weight: 500;
-}
-
-.task-card__onetime {
-  color: var(--color-text-muted);
-}
-
-.task-card__category {
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
   color: var(--color-text-secondary);
+}
+
+.task-card__recurrence-text {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.task-card__last-completed {
+  color: var(--color-text-muted);
 }
 
 /* ── Right side ── */

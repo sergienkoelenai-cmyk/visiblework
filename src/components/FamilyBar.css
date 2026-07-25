@@ -3,7 +3,7 @@
 .family-bar {
   width: 100%;
   padding: 20px 24px;
-  background: rgba(20, 20, 31, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--color-border);

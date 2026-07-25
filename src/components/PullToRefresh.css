@@ -1,0 +1,54 @@
+.ptr-container {
+  min-height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.25s ease, opacity 0.25s ease;
+  background: linear-gradient(
+    180deg,
+    rgba(108, 92, 231, 0.06) 0%,
+    transparent 100%
+  );
+}
+
+.ptr-spinner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.ptr-icon {
+  font-size: 20px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: var(--color-primary, #6c5ce7);
+}
+
+.ptr-icon--spinning {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ptr-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #999);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ptr-content {
+  min-height: 100%;
+}

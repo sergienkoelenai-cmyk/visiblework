@@ -91,7 +91,12 @@ export default function UserForm({ user = null, onSave, onCancel }) {
   };
 
   return (
-    <div className={`user-form-overlay ${visible ? 'user-form-overlay--visible' : ''}`} onClick={handleClose}>
+    <div 
+      className={`user-form-overlay ${visible ? 'user-form-overlay--visible' : ''}`} 
+      onClick={handleClose}
+      onTouchStart={e => e.stopPropagation()}
+      onTouchMove={e => e.stopPropagation()}
+    >
       <div className="user-form" onClick={(e) => e.stopPropagation()}>
         <h2 className="user-form__title">{user ? 'Edit Member' : 'New Member'}</h2>
 

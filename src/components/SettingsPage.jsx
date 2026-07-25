@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import Avatar from './Avatar';
+import { getTaskBaseCost } from '../data/pricing';
 import './SettingsPage.css';
+
+import { rrulestr } from 'rrule';
 
 const COMMON_EMOJIS = ['🧹', '🍽️', '👕', '🛒', '💰', '🔧', '🌱', '🐾', '🧒', '🚗', '📋', '📚', '🛁', '🏠', '💻', '🔋', '🐱', '🐶', '🍕', '🔑'];
 
@@ -9,8 +12,26 @@ function getRecurrenceLabel(task) {
   if (task.type === 'always-available') return 'Always available';
   const rec = task.recurrence;
   if (!rec) return 'Recurring';
+
+  // Check if it is the new RRULE format
+  const rruleString = typeof rec === 'string'
+    ? rec
+    : (rec.rrule || null);
+
+  if (rruleString) {
+    try {
+      const rule = rrulestr(rruleString);
+      return rule.toText();
+    } catch (e) {
+      console.error('Failed to parse RRule for label:', e);
+      return 'Recurring';
+    }
+  }
+
   if (rec.mode === 'interval_from_completion') {
-    return `Every ${rec.intervalDays} day${rec.intervalDays > 1 ? 's' : ''}`;
+    const val = rec.intervalValue || rec.intervalDays || 1;
+    const unit = rec.intervalUnit || 'days';
+    return `${val} ${unit} after completion`;
   }
   if (rec.mode === 'fixed_interval') {
     return `Every ${rec.fixedIntervalValue} ${rec.fixedIntervalUnit}`;
@@ -26,6 +47,8 @@ export default function SettingsPage({
   tasks = [],
   categories = [],
   completions = [],
+  baseRate = 10,
+  onUpdateSettings,
   onAddUser,
   onEditUser,
   onDeleteUser,
@@ -34,15 +57,28 @@ export default function SettingsPage({
   onAddTaskInCategory,
   onAddCategory,
   onDeleteCategory,
+  onRevertCompletion,
   onCashout,
   onSignOut,
   onBack,
 }) {
   // Category management local state
   const [showAddCat, setShowAddCat] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [newCatLabel, setNewCatLabel] = useState('');
   const [newCatEmoji, setNewCatEmoji] = useState(COMMON_EMOJIS[0]);
   const [catError, setCatError] = useState('');
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [deletingCategory, setDeletingCategory] = useState(null);
+
+  // Economy settings local state
+  const [baseRateInput, setBaseRateInput] = useState(String(baseRate));
+  const [baseRateSaved, setBaseRateSaved] = useState(false);
+
+  // Keep input in sync if the prop changes from outside (e.g. another device)
+  React.useEffect(() => {
+    setBaseRateInput(String(baseRate));
+  }, [baseRate]);
 
   // Group tasks by category and recurrence type
   const groupedTasks = useMemo(() => {
@@ -68,6 +104,22 @@ export default function SettingsPage({
     return groups;
   }, [tasks, categories]);
 
+  const handleStartEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setNewCatLabel(cat.label);
+    setNewCatEmoji(cat.emoji);
+    setShowAddCat(true);
+    setCatError('');
+  };
+
+  const handleCancelCategoryEdit = () => {
+    setShowAddCat(false);
+    setEditingCategory(null);
+    setNewCatLabel('');
+    setNewCatEmoji(COMMON_EMOJIS[0]);
+    setCatError('');
+  };
+
   const handleSaveCategory = (e) => {
     e.preventDefault();
     if (!newCatLabel.trim()) {
@@ -75,21 +127,32 @@ export default function SettingsPage({
       return;
     }
     onAddCategory?.({
+      id: editingCategory?.id,
       label: newCatLabel.trim(),
       emoji: newCatEmoji,
     });
     setNewCatLabel('');
+    setNewCatEmoji(COMMON_EMOJIS[0]);
+    setEditingCategory(null);
     setShowAddCat(false);
     setCatError('');
   };
 
-  const renderTaskItem = (task) => (
-    <div key={task.id} className="settings__task-item">
-      <div className="settings__task-item-details">
-        <span className="settings__task-item-title">{task.title}</span>
+  const renderTaskItem = (task) => {
+    const cat = categories.find(c => c.id === task.category);
+    const emoji = task.icon || (cat ? cat.emoji : '📋');
+    
+    return (
+      <div key={task.id} className="settings__task-item">
+        <div className="settings__task-item-details">
+          <span className="settings__task-item-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>{emoji}</span>
+            {task.isFavorite && <span style={{ fontSize: '14px' }}>⭐</span>}
+            {task.title}
+          </span>
         <div className="settings__task-item-meta">
           <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
-          <span className="settings__task-item-price">€{(task.price ?? 0).toFixed(2)}</span>
+          <span className="settings__task-item-price">€{getTaskBaseCost(task, baseRate).toFixed(2)}</span>
         </div>
       </div>
       <div className="settings__task-item-actions">
@@ -101,7 +164,8 @@ export default function SettingsPage({
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="settings">
@@ -122,6 +186,58 @@ export default function SettingsPage({
           Sign Out
         </button>
       </header>
+
+      {/* ── Economy Settings ── */}
+      <section className="settings__section">
+        <div className="settings__section-header">
+          <h2 className="settings__section-title">Economy</h2>
+        </div>
+        <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+            The <strong style={{ color: 'var(--color-text)' }}>Base Rate</strong> is the reward for a Low-complexity, 15-minute task.
+            All task costs are calculated as a multiple of this value.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
+            <input
+              id="base-rate-input"
+              type="number"
+              min="1"
+              step="1"
+              className="task-form__input"
+              value={baseRateInput}
+              onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
+              style={{ width: '90px', flex: 'none', fontWeight: 700, fontSize: '16px', textAlign: 'right' }}
+            />
+            <button
+              className="settings__add-btn"
+              type="button"
+              onClick={() => {
+                const n = parseFloat(baseRateInput);
+                if (!isNaN(n) && n > 0) {
+                  onUpdateSettings?.({ base_rate: n });
+                  setBaseRateSaved(true);
+                  setTimeout(() => setBaseRateSaved(false), 2000);
+                }
+              }}
+              style={{ minHeight: '38px', padding: '8px 16px' }}
+            >
+              {baseRateSaved ? '✓ Saved' : 'Save'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Low + 15m', formula: `€${Math.round(parseFloat(baseRateInput) * 1.0 * 1.0) || 0}` },
+              { label: 'Medium + 30m', formula: `€${Math.round(parseFloat(baseRateInput) * 1.5 * 1.8) || 0}` },
+              { label: 'High + 1h+', formula: `€${Math.round(parseFloat(baseRateInput) * 2.5 * 3.5) || 0}` },
+            ].map(ex => (
+              <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
+                {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.formula}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Family Members ── */}
       <section className="settings__section">
@@ -159,7 +275,7 @@ export default function SettingsPage({
                 <button className="settings__icon-btn" onClick={() => onEditUser?.(user)} title="Edit" type="button">
                   ✏️
                 </button>
-                <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => onDeleteUser?.(user.id)} title="Delete" type="button">
+                <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => setDeletingUser(user)} title="Delete" type="button">
                   🗑️
                 </button>
               </div>
@@ -205,34 +321,43 @@ export default function SettingsPage({
               />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="settings__back" onClick={() => { setShowAddCat(false); setCatError(''); }} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
+              <button className="settings__back" onClick={handleCancelCategoryEdit} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
                 Cancel
               </button>
               <button className="settings__add-btn" type="submit" style={{ padding: '8px 16px', minHeight: '38px' }}>
-                Save
+                {editingCategory ? 'Save Changes' : 'Save'}
               </button>
             </div>
             {catError && <p style={{ color: 'var(--color-danger)', fontSize: '12px', width: '100%', margin: '4px 0 0 0' }}>{catError}</p>}
           </form>
         )}
 
-        <div className="settings__categories-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+        <div className="settings__categories-grid">
           {categories.map((cat) => (
-            <div key={cat.id} className="settings__category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>{cat.emoji}</span>
-                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text)' }}>{cat.label}</span>
+            <div key={cat.id} className="settings__category-item">
+              <div className="settings__category-label-group">
+                <span className="settings__category-emoji">{cat.emoji}</span>
+                <span className="settings__category-label">{cat.label}</span>
               </div>
               {cat.id !== 'other' && (
-                <button
-                  className="settings__icon-btn settings__icon-btn--danger"
-                  onClick={() => onDeleteCategory?.(cat.id)}
-                  title={`Delete ${cat.label}`}
-                  type="button"
-                  style={{ width: '32px', height: '32px', fontSize: '14px', borderRadius: 'var(--radius-sm)' }}
-                >
-                  🗑️
-                </button>
+                <div className="settings__category-actions">
+                  <button
+                    className="settings__category-btn"
+                    onClick={() => handleStartEditCategory(cat)}
+                    title={`Edit ${cat.label}`}
+                    type="button"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="settings__category-btn settings__category-btn--danger"
+                    onClick={() => setDeletingCategory(cat)}
+                    title={`Delete ${cat.label}`}
+                    type="button"
+                  >
+                    🗑️
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -306,53 +431,94 @@ export default function SettingsPage({
         </div>
       </section>
 
-      {/* ── History ── */}
-      <section className="settings__section">
-        <h2 className="settings__section-title">History</h2>
 
-        {completions.length > 0 ? (
-          <div className="settings__history">
-            <div className="settings__history-header">
-              <span>Date</span>
-              <span>Task</span>
-              <span>Who</span>
-              <span>Amount</span>
-              <span style={{ textAlign: 'center' }}>Undo</span>
+
+      {deletingUser && (
+        <div className="overlay-backdrop" onClick={() => setDeletingUser(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚠️ Delete Family Member?
+            </h3>
+            
+            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0 }}>
+              Are you sure you want to delete <strong style={{ color: 'var(--color-text)' }}>{deletingUser.name}</strong>?
+            </p>
+
+            <div style={{ background: 'rgba(255, 82, 82, 0.05)', border: '1px solid rgba(255, 82, 82, 0.15)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: '12px', color: 'var(--color-danger)', fontWeight: 500, margin: 0, lineHeight: 1.4 }}>
+                This will permanently delete their profile and erase their current accumulated earnings of <strong>€{(deletingUser.balance ?? 0).toFixed(2)}</strong>. Historical completions will remain in logs but won't be editable under this user. This action cannot be undone.
+              </p>
             </div>
-            {completions.map((entry, idx) => (
-              <div key={entry.id || idx} className="settings__history-row">
-                <span className="settings__history-date">
-                  {entry.completedAt
-                    ? (entry.completedAt.toDate ? entry.completedAt.toDate() : new Date(entry.completedAt)).toLocaleDateString()
-                    : '—'}
-                </span>
-                <span className="settings__history-task">{entry.taskTitle || '—'}</span>
-                <span className="settings__history-user">{entry.userName || '—'}</span>
-                <span className="settings__history-amount">
-                  €{typeof entry.amount === 'number' ? entry.amount.toFixed(2) : '0.00'}
-                </span>
-                <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <button
-                    className="settings__icon-btn"
-                    onClick={() => {
-                      if (window.confirm(`Do you want to undo the completion of "${entry.taskTitle || 'this task'}"?`)) {
-                        onRevertCompletion?.(entry.id);
-                      }
-                    }}
-                    title="Undo this completion"
-                    type="button"
-                    style={{ width: '28px', height: '28px', fontSize: '12px', padding: 0 }}
-                  >
-                    ↩️
-                  </button>
-                </span>
-              </div>
-            ))}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setDeletingUser(null)} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={() => {
+                  onDeleteUser?.(deletingUser.id);
+                  setDeletingUser(null);
+                }} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px', background: 'var(--color-danger)', color: 'white', border: 'none' }}
+              >
+                Delete Member
+              </button>
+            </div>
           </div>
-        ) : (
-          <p className="settings__empty">No completed tasks yet.</p>
-        )}
-      </section>
+        </div>
+      )}
+
+      {deletingCategory && (
+        <div className="overlay-backdrop" onClick={() => setDeletingCategory(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚠️ Delete Category?
+            </h3>
+            
+            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0 }}>
+              Are you sure you want to delete the <span style={{ fontSize: '18px', marginRight: '4px' }}>{deletingCategory.emoji}</span> <strong style={{ color: 'var(--color-text)' }}>{deletingCategory.label}</strong> category?
+            </p>
+
+            <div style={{ background: 'rgba(108, 92, 231, 0.05)', border: '1px solid rgba(108, 92, 231, 0.15)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                Any tasks currently belonging to this category will automatically be moved to the default <strong>📋 Other</strong> category so they aren't lost. This action is permanent.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setDeletingCategory(null)} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={() => {
+                  onDeleteCategory?.(deletingCategory.id);
+                  setDeletingCategory(null);
+                }} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px', background: 'var(--color-danger)', color: 'white', border: 'none' }}
+              >
+                Delete Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
+        VisibleWork v1.8.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+      </div>
     </div>
   );
 }

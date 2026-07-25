@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
 import { 
   subscribeToUsers, 
   subscribeToTasks, 
   subscribeToCategories,
+  subscribeToSettings,
   addUser, 
   updateUser, 
   deleteUser, 
@@ -11,14 +12,20 @@ import {
   updateTask, 
   deleteTask, 
   addCategory,
+  updateCategory,
   deleteCategory,
   completeTask, 
   revertTaskCompletion,
   cashoutUser, 
   getCompletions, 
-  uploadAvatar 
+  getCompletionsForPeriod,
+  getUsers,
+  getTasks,
+  getCategories,
+  uploadAvatar,
+  updateSettings,
 } from './data/store'
-import { sortTasksByUrgency, getTaskStatus } from './data/scheduler'
+import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
 import TaskCompletionOverlay from './components/TaskCompletionOverlay'
@@ -26,6 +33,8 @@ import TaskForm from './components/TaskForm'
 import CashoutDialog from './components/CashoutDialog'
 import SettingsPage from './components/SettingsPage'
 import UserForm from './components/UserForm'
+import AnalyticsPage from './components/AnalyticsPage'
+import PullToRefresh from './components/PullToRefresh'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
@@ -41,7 +50,10 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [categories, setCategories] = useState([])
   const [completions, setCompletions] = useState([])
-  const [page, setPage] = useState('dashboard') // 'dashboard' | 'settings'
+  const [analyticsCompletions, setAnalyticsCompletions] = useState([])
+  const [analyticsPeriod, setAnalyticsPeriod] = useState(null)
+  const [settings, setSettings] = useState({ base_rate: 10 })
+  const [page, setPage] = useState('dashboard') // 'dashboard' | 'settings' | 'analytics'
   
   // Modal states
   const [completingTask, setCompletingTask] = useState(null)
@@ -60,6 +72,8 @@ function App() {
     return unsubscribe
   }, [])
 
+
+
   // --- Real-time subscriptions ---
   useEffect(() => {
     if (!currentUser) return
@@ -73,15 +87,54 @@ function App() {
     const unsubCategories = subscribeToCategories((updatedCategories) => {
       setCategories(updatedCategories)
     })
+    const unsubSettings = subscribeToSettings((updatedSettings) => {
+      setSettings(updatedSettings)
+    })
 
     return () => {
       unsubUsers()
       unsubTasks()
       unsubCategories()
+      unsubSettings()
     }
   }, [currentUser])
 
-  // Load completions when going to settings
+  // --- Database Auto-Fixer for anomalous due dates ---
+  const hasFixedRef = useRef(false)
+  useEffect(() => {
+    if (!currentUser || tasks.length === 0 || hasFixedRef.current) return
+    hasFixedRef.current = true
+
+    const today = new Date()
+    today.setHours(0,0,0,0)
+
+
+    tasks.forEach(async (task) => {
+      try {
+        if (task.type === 'recurring' && task.nextDueDate) {
+          const dueDate = task.nextDueDate.toDate ? task.nextDueDate.toDate() : new Date(task.nextDueDate)
+          if (isNaN(dueDate.getTime())) return
+
+          if (dueDate < today) {
+            if (task.lastCompletedAt) {
+              const compDate = task.lastCompletedAt.toDate ? task.lastCompletedAt.toDate() : new Date(task.lastCompletedAt)
+              if (isNaN(compDate.getTime())) return
+
+              const calculatedDate = calculateNextDueDate(task, compDate)
+              if (calculatedDate && !isNaN(calculatedDate.getTime()) && calculatedDate > dueDate) {
+                console.log(`[Auto-Fix] Correcting nextDueDate for "${task.title}"`)
+                await updateTask(task.id, {
+                  nextDueDate: calculatedDate
+                })
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Auto-Fix] Error checking task:', task.title, err)
+      }
+    })
+  }, [currentUser, tasks])
   useEffect(() => {
     if (page === 'settings' && currentUser) {
       getCompletions(100).then(setCompletions)
@@ -89,36 +142,65 @@ function App() {
   }, [page, currentUser])
 
   // --- Derived data ---
+  // Date boundaries for dashboard sections
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const threeDaysFromNow = new Date();
+  threeDaysFromNow.setDate(now.getDate() + 3);
+  threeDaysFromNow.setHours(23,59,59,999);
+
+  // Active tasks (including always-available, ad-hoc, and those due within next 3 days)
   const activeTasks = tasks.filter(t => {
     if (!t.isActive) return false;
     if (t.type === 'always-available') return true;
     if (t.type === 'ad-hoc') return true;
     if (t.nextDueDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(today.getDate() + 3);
-      threeDaysFromNow.setHours(23, 59, 59, 999);
-      
       const dueDate = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
       return dueDate <= threeDaysFromNow;
     }
     return true;
-  })
-  const sortedTasks = sortTasksByUrgency(activeTasks)
+  });
+
+  // Sort and add status
+  const sortedTasks = sortTasksByUrgency(activeTasks);
   const tasksWithStatus = sortedTasks.map(t => ({
     ...t,
     status: getTaskStatus(t),
-  }))
+  }));
+
+  // Split tasks for dashboard sections
+  const endOfToday = new Date(now.getTime() + 24*60*60*1000);
+
+  const todayTasks = tasksWithStatus.filter(t => {
+    if (t.type === 'always-available' || t.type === 'ad-hoc') return true;
+    if (!t.nextDueDate) return false;
+    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+    return due < endOfToday; // Includes overdue and due today
+  });
+
+  const upcomingTasks = tasksWithStatus.filter(t => {
+    if (t.type === 'always-available' || t.type === 'ad-hoc') return false;
+    if (!t.nextDueDate) return false;
+    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+    return due >= endOfToday && due <= threeDaysFromNow;
+  });
 
   // --- Handlers ---
   const handleCompleteTask = useCallback((task) => {
     setCompletingTask(task)
   }, [])
 
-  const handleConfirmCompletion = useCallback(async (taskId, userId) => {
-    await completeTask(taskId, userId)
+  const handleConfirmCompletion = useCallback(async (taskId, userId, multiplier = 1.0) => {
+    await completeTask(taskId, userId, settings.base_rate ?? 10, multiplier)
     setCompletingTask(null)
+  }, [settings.base_rate])
+
+  const handleToggleFavorite = useCallback(async (taskId, isFavorite) => {
+    try {
+      await updateTask(taskId, { isFavorite })
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err)
+    }
   }, [])
 
   const handleSaveTask = useCallback(async (taskData) => {
@@ -130,6 +212,10 @@ function App() {
     setShowTaskForm(false)
     setEditingTask(null)
   }, [editingTask])
+
+  const handleUpdateSettings = useCallback(async (data) => {
+    await updateSettings(data)
+  }, [])
 
   const handleEditTask = useCallback((task) => {
     setEditingTask(task)
@@ -146,7 +232,11 @@ function App() {
   }, [])
 
   const handleSaveCategory = useCallback(async (categoryData) => {
-    await addCategory(categoryData)
+    if (categoryData.id) {
+      await updateCategory(categoryData.id, categoryData)
+    } else {
+      await addCategory(categoryData)
+    }
   }, [])
 
   const handleDeleteCategory = useCallback(async (categoryId) => {
@@ -154,12 +244,55 @@ function App() {
   }, [])
 
   const handleRevertCompletion = useCallback(async (completionId) => {
-    await revertTaskCompletion(completionId)
-    if (page === 'settings') {
-      const updatedCompletions = await getCompletions(100)
-      setCompletions(updatedCompletions)
+    try {
+      await revertTaskCompletion(completionId)
+      // Refresh completions for whatever page is active
+      if (page === 'settings') {
+        const updatedCompletions = await getCompletions(100)
+        setCompletions(updatedCompletions)
+      }
+      if (page === 'analytics' && analyticsPeriod) {
+        const updated = await getCompletionsForPeriod(analyticsPeriod.start, analyticsPeriod.end)
+        setAnalyticsCompletions(updated)
+      }
+      alert('Completion undone successfully!')
+    } catch (err) {
+      console.error("Failed to revert completion:", err)
+      alert("Error undoing completion: " + err.message)
     }
-  }, [page])
+  }, [page, analyticsPeriod])
+
+  const handleAnalyticsPeriodChange = useCallback(async (startDate, endDate) => {
+    setAnalyticsPeriod({ start: startDate, end: endDate })
+    try {
+      const periodCompletions = await getCompletionsForPeriod(startDate, endDate)
+      setAnalyticsCompletions(periodCompletions)
+    } catch (err) {
+      console.error('Failed to fetch period completions:', err)
+    }
+  }, [])
+
+  // Pull-to-refresh handler: re-fetches all data from server
+  const handleRefresh = useCallback(async () => {
+    const [freshUsers, freshTasks, freshCategories] = await Promise.all([
+      getUsers(),
+      getTasks(),
+      getCategories(),
+    ])
+    setUsers(freshUsers)
+    setTasks(freshTasks)
+    setCategories(freshCategories)
+
+    // Also refresh completions for the current page context
+    if (page === 'settings') {
+      const c = await getCompletions(100)
+      setCompletions(c)
+    }
+    if (page === 'analytics' && analyticsPeriod) {
+      const c = await getCompletionsForPeriod(analyticsPeriod.start, analyticsPeriod.end)
+      setAnalyticsCompletions(c)
+    }
+  }, [page, analyticsPeriod])
 
   const handleSaveUser = useCallback(async (userData, avatarFile) => {
     let avatarUrl = userData.avatar || ''
@@ -220,14 +353,33 @@ function App() {
     return <Login />
   }
 
+  if (page === 'analytics') {
+    return (
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="app">
+          <AnalyticsPage
+            users={users}
+            completions={analyticsCompletions}
+            onRevertCompletion={handleRevertCompletion}
+            onPeriodChange={handleAnalyticsPeriodChange}
+            onBack={() => setPage('dashboard')}
+          />
+        </div>
+      </PullToRefresh>
+    )
+  }
+
   if (page === 'settings') {
     return (
-      <div className="app">
-        <SettingsPage
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="app">
+          <SettingsPage
           users={users}
           tasks={tasks}
           categories={categories}
           completions={completions}
+          baseRate={settings.base_rate ?? 10}
+          onUpdateSettings={handleUpdateSettings}
           onAddUser={() => { setEditingUser(null); setShowUserForm(true) }}
           onEditUser={handleEditUser}
           onDeleteUser={handleDeleteUser}
@@ -261,17 +413,19 @@ function App() {
         {showTaskForm && (
           <TaskForm
             task={editingTask}
-            categories={CATEGORIES}
+            categories={categories}
             onSave={handleSaveTask}
             onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
           />
         )}
       </div>
+      </PullToRefresh>
     )
   }
 
   return (
-    <div className="app">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="app">
       {/* Header */}
       <header className="app-header">
         <div className="app-logo">
@@ -284,7 +438,15 @@ function App() {
             onClick={() => { setEditingTask(null); setShowTaskForm(true) }}
             id="add-task-btn"
           >
-            <span>+</span> New Task
+            <span>+</span> <span className="app-header-btn-text">New Task</span>
+          </button>
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={() => setPage('analytics')}
+            id="analytics-btn"
+            title="Analytics & History"
+          >
+            📊
           </button>
           <button
             className="btn btn-ghost btn-icon"
@@ -302,14 +464,17 @@ function App() {
         {/* Family Members */}
         <FamilyBar users={users} onUserClick={handleUserClick} />
 
-        {/* Task List */}
-        <TaskList
-          tasks={tasksWithStatus}
-          categories={CATEGORIES}
-          onCompleteTask={handleCompleteTask}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-        />
+        <section className="dashboard-section">
+          <h2 className="section-title">Due today</h2>
+          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 10} onCompleteTask={handleCompleteTask} showFavorites />
+        </section>
+
+        <section className="dashboard-section">
+          <h2 className="section-title">Upcoming tasks</h2>
+          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 10} onCompleteTask={handleCompleteTask} />
+        </section>
+
+        {/* Full task list removed */}
       </main>
 
       {/* --- Modals / Overlays --- */}
@@ -318,15 +483,18 @@ function App() {
         <TaskCompletionOverlay
           task={completingTask}
           users={users}
+          baseRate={settings.base_rate ?? 10}
           onConfirm={handleConfirmCompletion}
           onCancel={() => setCompletingTask(null)}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
 
       {showTaskForm && (
         <TaskForm
           task={editingTask}
-          categories={CATEGORIES}
+          categories={categories}
+          baseRate={settings.base_rate ?? 10}
           onSave={handleSaveTask}
           onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
         />
@@ -348,6 +516,7 @@ function App() {
         />
       )}
     </div>
+    </PullToRefresh>
   )
 }
 
