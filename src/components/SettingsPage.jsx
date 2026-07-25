@@ -79,6 +79,24 @@ export default function SettingsPage({
   const [highMultInput, setHighMultInput] = useState(String(complexityMultipliers?.HIGH ?? 2.5));
   const [baseRateSaved, setBaseRateSaved] = useState(false);
 
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState({
+    economy: false,
+    family: false,
+    categories: false,
+  });
+
+  const toggleSection = (sectionKey) => {
+    setExpandedSections((prev) => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
+  };
+
+  // Collapsible task category groups inside Manage Tasks
+  const [expandedTaskCats, setExpandedTaskCats] = useState({});
+
+  const toggleTaskCat = (catId) => {
+    setExpandedTaskCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
   // Keep input in sync if the prop changes from outside (e.g. another device)
   React.useEffect(() => {
     setBaseRateInput(String(baseRate));
@@ -196,244 +214,291 @@ export default function SettingsPage({
 
       {/* ── Economy Settings ── */}
       <section className="settings__section">
-        <div className="settings__section-header">
-          <h2 className="settings__section-title">Economy Settings</h2>
+        <div
+          className="settings__section-header"
+          onClick={() => toggleSection('economy')}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+          <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.economy ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+            Economy Settings
+          </h2>
         </div>
-        <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
-            Task reward formula: <strong style={{ color: 'var(--color-text)' }}>Base Rate × Effort Coefficient × Duration (minutes)</strong>
-          </p>
+        {expandedSections.economy && (
+          <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+              Task reward formula: <strong style={{ color: 'var(--color-text)' }}>Base Rate × Effort Coefficient × Duration (minutes)</strong>
+            </p>
 
-          {/* Base Rate */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
-              Base Rate (per minute)
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="task-form__input"
-                value={baseRateInput}
-                onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
-                style={{ width: '100px', flex: 'none', fontWeight: 700, fontSize: '16px', textAlign: 'right' }}
-              />
-            </div>
-          </div>
-
-          {/* Effort Coefficients */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
-              Effort Coefficients
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟢 Low</span>
+            {/* Base Rate */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                Base Rate (per minute)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>€</span>
                 <input
                   type="number"
                   min="0"
-                  step="0.1"
+                  step="0.01"
                   className="task-form__input"
-                  value={lowMultInput}
-                  onChange={(e) => { setLowMultInput(e.target.value); setBaseRateSaved(false); }}
-                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟡 Medium</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  className="task-form__input"
-                  value={medMultInput}
-                  onChange={(e) => { setMedMultInput(e.target.value); setBaseRateSaved(false); }}
-                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🔴 High</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  className="task-form__input"
-                  value={highMultInput}
-                  onChange={(e) => { setHighMultInput(e.target.value); setBaseRateSaved(false); }}
-                  style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                  value={baseRateInput}
+                  onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
+                  style={{ width: '100px', flex: 'none', fontWeight: 700, fontSize: '16px', textAlign: 'right' }}
                 />
               </div>
             </div>
-          </div>
 
-          <button
-            className="settings__add-btn"
-            type="button"
-            onClick={() => {
-              const rate = parseFloat(baseRateInput) || 0;
-              const low = parseFloat(lowMultInput) || 0;
-              const med = parseFloat(medMultInput) || 0;
-              const high = parseFloat(highMultInput) || 0;
-              if (!isNaN(rate) && rate >= 0 && !isNaN(low) && !isNaN(med) && !isNaN(high)) {
-                onUpdateSettings?.({
-                  base_rate: rate,
-                  complexity_multipliers: { LOW: low, MEDIUM: med, HIGH: high },
-                });
-                setBaseRateSaved(true);
-                setTimeout(() => setBaseRateSaved(false), 2000);
-              }
-            }}
-            style={{ minHeight: '40px', padding: '8px 20px', alignSelf: 'flex-start' }}
-          >
-            {baseRateSaved ? '✓ Saved Economy Settings' : 'Save Economy Settings'}
-          </button>
+            {/* Effort Coefficients */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                Effort Coefficients
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟢 Low</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    className="task-form__input"
+                    value={lowMultInput}
+                    onChange={(e) => { setLowMultInput(e.target.value); setBaseRateSaved(false); }}
+                    style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟡 Medium</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    className="task-form__input"
+                    value={medMultInput}
+                    onChange={(e) => { setMedMultInput(e.target.value); setBaseRateSaved(false); }}
+                    style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🔴 High</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    className="task-form__input"
+                    value={highMultInput}
+                    onChange={(e) => { setHighMultInput(e.target.value); setBaseRateSaved(false); }}
+                    style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* Formula preview chips */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
-            {(() => {
-              const r = parseFloat(baseRateInput) || 0;
-              const l = parseFloat(lowMultInput) || 1.0;
-              const m = parseFloat(medMultInput) || 1.5;
-              const h = parseFloat(highMultInput) || 2.5;
-              return [
-                { label: `Low (${l}×) + 5m`, cost: `€${(Math.round(r * l * 5 * 100) / 100).toFixed(2)}` },
-                { label: `Medium (${m}×) + 30m`, cost: `€${(Math.round(r * m * 30 * 100) / 100).toFixed(2)}` },
-                { label: `High (${h}×) + 60m`, cost: `€${(Math.round(r * h * 60 * 100) / 100).toFixed(2)}` },
-              ].map(ex => (
-                <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
-                  {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.cost}</strong>
-                </span>
-              ));
-            })()}
+            <button
+              className="settings__add-btn"
+              type="button"
+              onClick={() => {
+                const rate = parseFloat(baseRateInput) || 0;
+                const low = parseFloat(lowMultInput) || 0;
+                const med = parseFloat(medMultInput) || 0;
+                const high = parseFloat(highMultInput) || 0;
+                if (!isNaN(rate) && rate >= 0 && !isNaN(low) && !isNaN(med) && !isNaN(high)) {
+                  onUpdateSettings?.({
+                    base_rate: rate,
+                    complexity_multipliers: { LOW: low, MEDIUM: med, HIGH: high },
+                  });
+                  setBaseRateSaved(true);
+                  setTimeout(() => setBaseRateSaved(false), 2000);
+                }
+              }}
+              style={{ minHeight: '40px', padding: '8px 20px', alignSelf: 'flex-start' }}
+            >
+              {baseRateSaved ? '✓ Saved Economy Settings' : 'Save Economy Settings'}
+            </button>
+
+            {/* Formula preview chips */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+              {(() => {
+                const r = parseFloat(baseRateInput) || 0;
+                const l = parseFloat(lowMultInput) || 1.0;
+                const m = parseFloat(medMultInput) || 1.5;
+                const h = parseFloat(highMultInput) || 2.5;
+                return [
+                  { label: `Low (${l}×) + 5m`, cost: `€${(Math.round(r * l * 5 * 100) / 100).toFixed(2)}` },
+                  { label: `Medium (${m}×) + 30m`, cost: `€${(Math.round(r * m * 30 * 100) / 100).toFixed(2)}` },
+                  { label: `High (${h}×) + 60m`, cost: `€${(Math.round(r * h * 60 * 100) / 100).toFixed(2)}` },
+                ].map(ex => (
+                  <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
+                    {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.cost}</strong>
+                  </span>
+                ));
+              })()}
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ── Family Members ── */}
       <section className="settings__section">
-        <div className="settings__section-header">
-          <h2 className="settings__section-title">Family Members</h2>
-          <button className="settings__add-btn" onClick={onAddUser} type="button">
+        <div
+          className="settings__section-header"
+          onClick={() => toggleSection('family')}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+          <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.family ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+            Family Members
+            <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+              {users.length}
+            </span>
+          </h2>
+          <button
+            className="settings__add-btn"
+            onClick={(e) => { e.stopPropagation(); onAddUser?.(); }}
+            type="button"
+          >
             + Add Member
           </button>
         </div>
 
-        <div className="settings__members">
-          {users.map((user) => (
-            <div key={user.id} className="settings__member">
-              <Avatar user={user} size="md" />
+        {expandedSections.family && (
+          <div className="settings__members">
+            {users.map((user) => (
+              <div key={user.id} className="settings__member">
+                <Avatar user={user} size="md" />
 
-              <div className="settings__member-info">
-                <span className="settings__member-name">{user.name}</span>
-                <div className="settings__member-stats">
-                  <span className="settings__stat">
-                    Balance: <strong className="settings__stat-balance">€{(user.balance ?? 0).toFixed(2)}</strong>
-                  </span>
-                  <span className="settings__stat">
-                    Earned: <span className="settings__stat-earned">€{(user.totalEarned ?? 0).toFixed(2)}</span>
-                  </span>
-                  <span className="settings__stat">
-                    Cashed out: <span className="settings__stat-cashout">€{(user.totalCashedOut ?? 0).toFixed(2)}</span>
-                  </span>
+                <div className="settings__member-info">
+                  <span className="settings__member-name">{user.name}</span>
+                  <div className="settings__member-stats">
+                    <span className="settings__stat">
+                      Balance: <strong className="settings__stat-balance">€{(user.balance ?? 0).toFixed(2)}</strong>
+                    </span>
+                    <span className="settings__stat">
+                      Earned: <span className="settings__stat-earned">€{(user.totalEarned ?? 0).toFixed(2)}</span>
+                    </span>
+                    <span className="settings__stat">
+                      Cashed out: <span className="settings__stat-cashout">€{(user.totalCashedOut ?? 0).toFixed(2)}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="settings__member-actions">
+                  <button className="settings__icon-btn" onClick={() => onCashout?.(user)} title="Cash out" type="button">
+                    💰
+                  </button>
+                  <button className="settings__icon-btn" onClick={() => onEditUser?.(user)} title="Edit" type="button">
+                    ✏️
+                  </button>
+                  <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => setDeletingUser(user)} title="Delete" type="button">
+                    🗑️
+                  </button>
                 </div>
               </div>
+            ))}
 
-              <div className="settings__member-actions">
-                <button className="settings__icon-btn" onClick={() => onCashout?.(user)} title="Cash out" type="button">
-                  💰
-                </button>
-                <button className="settings__icon-btn" onClick={() => onEditUser?.(user)} title="Edit" type="button">
-                  ✏️
-                </button>
-                <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => setDeletingUser(user)} title="Delete" type="button">
-                  🗑️
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {users.length === 0 && (
-            <p className="settings__empty">No family members yet. Add someone to get started!</p>
-          )}
-        </div>
+            {users.length === 0 && (
+              <p className="settings__empty">No family members yet. Add someone to get started!</p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ── Manage Categories ── */}
       <section className="settings__section">
-        <div className="settings__section-header">
-          <h2 className="settings__section-title">Manage Categories</h2>
+        <div
+          className="settings__section-header"
+          onClick={() => toggleSection('categories')}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+          <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.categories ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+            Manage Categories
+            <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+              {categories.length}
+            </span>
+          </h2>
           {!showAddCat && (
-            <button className="settings__add-btn" onClick={() => setShowAddCat(true)} type="button">
+            <button
+              className="settings__add-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAddCat(true);
+                setExpandedSections(prev => ({ ...prev, categories: true }));
+              }}
+              type="button"
+            >
               + Add Category
             </button>
           )}
         </div>
 
-        {showAddCat && (
-          <form className="settings__cat-form" onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Emoji</span>
-              <select className="task-form__select" value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} style={{ minWidth: '70px', padding: '8px 10px', minHeight: '38px' }}>
-                {COMMON_EMOJIS.map(em => (
-                  <option key={em} value={em}>{em}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Category Name</span>
-              <input
-                className="task-form__input"
-                type="text"
-                value={newCatLabel}
-                onChange={(e) => { setNewCatLabel(e.target.value); setCatError(''); }}
-                placeholder="e.g. Cooking"
-                style={{ padding: '8px 12px', minHeight: '38px' }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="settings__back" onClick={handleCancelCategoryEdit} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
-                Cancel
-              </button>
-              <button className="settings__add-btn" type="submit" style={{ padding: '8px 16px', minHeight: '38px' }}>
-                {editingCategory ? 'Save Changes' : 'Save'}
-              </button>
-            </div>
-            {catError && <p style={{ color: 'var(--color-danger)', fontSize: '12px', width: '100%', margin: '4px 0 0 0' }}>{catError}</p>}
-          </form>
-        )}
-
-        <div className="settings__categories-grid">
-          {categories.map((cat) => (
-            <div key={cat.id} className="settings__category-item">
-              <div className="settings__category-label-group">
-                <span className="settings__category-emoji">{cat.emoji}</span>
-                <span className="settings__category-label">{cat.label}</span>
-              </div>
-              {cat.id !== 'other' && (
-                <div className="settings__category-actions">
-                  <button
-                    className="settings__category-btn"
-                    onClick={() => handleStartEditCategory(cat)}
-                    title={`Edit ${cat.label}`}
-                    type="button"
-                  >
-                    ✏️
+        {expandedSections.categories && (
+          <>
+            {showAddCat && (
+              <form className="settings__cat-form" onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Emoji</span>
+                  <select className="task-form__select" value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} style={{ minWidth: '70px', padding: '8px 10px', minHeight: '38px' }}>
+                    {COMMON_EMOJIS.map(em => (
+                      <option key={em} value={em}>{em}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Category Name</span>
+                  <input
+                    className="task-form__input"
+                    type="text"
+                    value={newCatLabel}
+                    onChange={(e) => { setNewCatLabel(e.target.value); setCatError(''); }}
+                    placeholder="e.g. Cooking"
+                    style={{ padding: '8px 12px', minHeight: '38px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="settings__back" onClick={handleCancelCategoryEdit} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
+                    Cancel
                   </button>
-                  <button
-                    className="settings__category-btn settings__category-btn--danger"
-                    onClick={() => setDeletingCategory(cat)}
-                    title={`Delete ${cat.label}`}
-                    type="button"
-                  >
-                    🗑️
+                  <button className="settings__add-btn" type="submit" style={{ padding: '8px 16px', minHeight: '38px' }}>
+                    {editingCategory ? 'Save Changes' : 'Save'}
                   </button>
                 </div>
-              )}
+                {catError && <p style={{ color: 'var(--color-danger)', fontSize: '12px', width: '100%', margin: '4px 0 0 0' }}>{catError}</p>}
+              </form>
+            )}
+
+            <div className="settings__categories-grid">
+              {categories.map((cat) => (
+                <div key={cat.id} className="settings__category-item">
+                  <div className="settings__category-label-group">
+                    <span className="settings__category-emoji">{cat.emoji}</span>
+                    <span className="settings__category-label">{cat.label}</span>
+                  </div>
+                  {cat.id !== 'other' && (
+                    <div className="settings__category-actions">
+                      <button
+                        className="settings__category-btn"
+                        onClick={() => handleStartEditCategory(cat)}
+                        title={`Edit ${cat.label}`}
+                        type="button"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="settings__category-btn settings__category-btn--danger"
+                        onClick={() => setDeletingCategory(cat)}
+                        title={`Delete ${cat.label}`}
+                        type="button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </section>
 
       {/* ── Manage Tasks ── */}
@@ -449,54 +514,71 @@ export default function SettingsPage({
             const hasRecurring = catGroup.recurring.length > 0;
             const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
             const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
+            const totalTasksInCat = catGroup.adHoc.length + catGroup.recurring.length + catGroup.alwaysAvailable.length;
+            const isCatExpanded = !!expandedTaskCats[cat.id];
 
             return (
               <div key={cat.id} className="settings__category-group">
-                <div className="settings__category-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
-                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-                    <span className="settings__category-emoji">{cat.emoji}</span> {cat.label}
+                <div
+                  className="settings__category-header-row"
+                  onClick={() => toggleTaskCat(cat.id)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: isCatExpanded ? '1px solid var(--color-border)' : 'none', paddingBottom: isCatExpanded ? '8px' : 0, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ display: 'inline-block', fontSize: '12px', transition: 'transform 0.2s ease', transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+                    <span className="settings__category-emoji">{cat.emoji}</span>
+                    {cat.label}
+                    <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+                      {totalTasksInCat}
+                    </span>
                   </h3>
                   <button
                     className="settings__add-task-inline"
-                    onClick={() => onAddTaskInCategory?.(cat.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedTaskCats(prev => ({ ...prev, [cat.id]: true }));
+                      onAddTaskInCategory?.(cat.id);
+                    }}
                     type="button"
                   >
                     + Add Task
                   </button>
                 </div>
                 
-                <div className="settings__category-content">
-                  {hasAlwaysAvailable && (
-                    <div className="settings__type-group">
-                      <h4 className="settings__type-title">Always Available</h4>
-                      <div className="settings__tasks-list">
-                        {catGroup.alwaysAvailable.map(renderTaskItem)}
+                {isCatExpanded && (
+                  <div className="settings__category-content">
+                    {hasAlwaysAvailable && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">Always Available</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.alwaysAvailable.map(renderTaskItem)}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {hasRecurring && (
-                    <div className="settings__type-group">
-                      <h4 className="settings__type-title">Recurring</h4>
-                      <div className="settings__tasks-list">
-                        {catGroup.recurring.map(renderTaskItem)}
+                    {hasRecurring && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">Recurring</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.recurring.map(renderTaskItem)}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {hasAdHoc && (
-                    <div className="settings__type-group">
-                      <h4 className="settings__type-title">One-time</h4>
-                      <div className="settings__tasks-list">
-                        {catGroup.adHoc.map(renderTaskItem)}
+                    {hasAdHoc && (
+                      <div className="settings__type-group">
+                        <h4 className="settings__type-title">One-time</h4>
+                        <div className="settings__tasks-list">
+                          {catGroup.adHoc.map(renderTaskItem)}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {!hasAnyTasks && (
-                    <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
-                  )}
-                </div>
+                    {!hasAnyTasks && (
+                      <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -589,7 +671,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v2.0.3 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.1.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );
