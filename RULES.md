@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.0.3  | Allow clearing custom recurrence interval (repeat every N days/weeks) and occurrence count fields to empty |
 | v2.0.2  | Fix missing baseRate and complexityMultipliers props on TaskForm when editing tasks from Settings view |
 | v2.0.1  | Allow clearing price/duration inputs to empty state during editing; allow 0 price and 0 duration |
 | v2.0.0  | Feats & Random Task Generator (availability guard, capacity filter, recency weighting, & Feat tags) |

@@ -43,14 +43,14 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDateType, setEndDateType] = useState('never');
   const [endDateValue, setEndDateValue] = useState(new Date().toISOString().slice(0, 10));
-  const [endCountValue, setEndCountValue] = useState(10);
+  const [endCountValue, setEndCountValue] = useState('10');
   const [repeatFrequency, setRepeatFrequency] = useState('none');
   const [weeklyDays, setWeeklyDays] = useState([]);
   const [monthlyStrategy, setMonthlyStrategy] = useState('day_of_month');
   const [monthlyDayOfMonth, setMonthlyDayOfMonth] = useState(new Date().getDate());
   const [monthlyDayOfWeekPos, setMonthlyDayOfWeekPos] = useState(1);
   const [monthlyDayOfWeekDay, setMonthlyDayOfWeekDay] = useState('MO');
-  const [customInterval, setCustomInterval] = useState(1);
+  const [customInterval, setCustomInterval] = useState('1');
   const [customUnit, setCustomUnit] = useState('days');
   const [fromLastCompletion, setFromLastCompletion] = useState(false);
 
@@ -121,10 +121,11 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
     let recurrence = null;
     if (computedType === 'recurring') {
+      const parsedInterval = customInterval === '' ? 0 : (parseInt(customInterval, 10) || 0);
       if (repeatFrequency === 'custom' && fromLastCompletion) {
         recurrence = {
           mode: 'interval_from_completion',
-          intervalValue: parseInt(customInterval, 10) || 1,
+          intervalValue: parsedInterval,
           intervalUnit: customUnit,
           startDate: startDate,
         };
@@ -169,7 +170,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
 
         if (repeatFrequency === 'custom' && fromLastCompletion) {
           if (lastComp) {
-            const val = parseInt(customInterval, 10) || 1;
+            const val = customInterval === '' ? 0 : (parseInt(customInterval, 10) || 0);
             const unit = customUnit;
             if (unit === 'weeks') {
               nextDueDate = new Date(lastComp.getTime() + val * 7 * 24 * 60 * 60 * 1000);
@@ -562,10 +563,11 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
               Number of occurrences
               <input
                 type="number"
-                min="1"
+                min="0"
                 className="task-form__input"
                 value={endCountValue}
-                onChange={(e) => setEndCountValue(parseInt(e.target.value, 10) || 1)}
+                onChange={(e) => setEndCountValue(e.target.value)}
+                placeholder="0"
               />
             </label>
           )}
@@ -603,10 +605,11 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
                   Repeat every
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     className="task-form__input"
                     value={customInterval}
-                    onChange={(e) => setCustomInterval(parseInt(e.target.value, 10) || 1)}
+                    onChange={(e) => setCustomInterval(e.target.value)}
+                    placeholder="0"
                   />
                 </label>
                 <label className="task-form__label">
@@ -764,14 +767,14 @@ function parseRRuleToState(rruleStr, taskType) {
     startDate: new Date().toISOString().slice(0, 10),
     endDateType: 'never',
     endDateValue: new Date().toISOString().slice(0, 10),
-    endCountValue: 10,
+    endCountValue: '10',
     repeatFrequency: 'none',
     weeklyDays: [],
     monthlyStrategy: 'day_of_month',
     monthlyDayOfMonth: new Date().getDate(),
     monthlyDayOfWeekPos: 1,
     monthlyDayOfWeekDay: 'MO',
-    customInterval: 1,
+    customInterval: '1',
     customUnit: 'days',
   };
 
@@ -793,7 +796,7 @@ function parseRRuleToState(rruleStr, taskType) {
   if (typeof rruleStr === 'object' && rruleStr.mode === 'interval_from_completion') {
     defaultState.repeatFrequency = 'custom';
     defaultState.fromLastCompletion = true;
-    defaultState.customInterval = rruleStr.intervalValue || rruleStr.intervalDays || 1;
+    defaultState.customInterval = String(rruleStr.intervalValue ?? rruleStr.intervalDays ?? 1);
     defaultState.customUnit = rruleStr.intervalUnit || 'days';
     if (rruleStr.startDate) {
       defaultState.startDate = rruleStr.startDate;
@@ -819,13 +822,13 @@ function parseRRuleToState(rruleStr, taskType) {
       defaultState.endDateValue = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     } else if (options.count) {
       defaultState.endDateType = 'count';
-      defaultState.endCountValue = options.count;
+      defaultState.endCountValue = String(options.count);
     }
 
     const isCustom = options.interval > 1;
     if (isCustom) {
       defaultState.repeatFrequency = 'custom';
-      defaultState.customInterval = options.interval;
+      defaultState.customInterval = String(options.interval);
       if (options.freq === RRule.DAILY) defaultState.customUnit = 'days';
       if (options.freq === RRule.WEEKLY) defaultState.customUnit = 'weeks';
       if (options.freq === RRule.MONTHLY) defaultState.customUnit = 'months';
@@ -924,11 +927,11 @@ function generateRRule(state) {
   options.dtstart = new Date(year, month - 1, day);
 
   // End Date / Occurrences
-  if (endDateType === 'date') {
+  if (endDateType === 'date' && endDateValue) {
     const [eyear, emonth, eday] = endDateValue.split('-').map(Number);
     options.until = new Date(eyear, emonth - 1, eday, 23, 59, 59);
   } else if (endDateType === 'count') {
-    options.count = parseInt(endCountValue, 10) || 1;
+    options.count = endCountValue === '' ? 0 : (parseInt(endCountValue, 10) || 0);
   }
 
   return new RRule(options);
