@@ -30,6 +30,7 @@ import {
 import { db, storage } from './firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { calculateNextDueDate } from './scheduler.js';
+import { calculateFinalReward } from './pricing.js';
 
 // ─── Collection references ──────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ const usersCol = collection(db, 'users');
 const tasksCol = collection(db, 'tasks');
 const completionsCol = collection(db, 'completions');
 const cashoutsCol = collection(db, 'cashouts');
+const settingsDoc = doc(db, 'settings', 'global');
 
 // ─── Helper: convert Firestore doc → plain object with id ───────────────────
 
@@ -105,6 +107,40 @@ export function subscribeToUsers(callback) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fetch global settings (one-time read).
+ * Returns defaults if the document doesn't exist yet.
+ * @returns {Promise<Object>} e.g. { base_rate: 10 }
+ */
+export async function getSettings() {
+  const snap = await getDoc(settingsDoc);
+  if (!snap.exists()) return { base_rate: 10 };
+  return snap.data();
+}
+
+/**
+ * Write / merge global settings.
+ * @param {Object} data - Partial settings fields to merge.
+ */
+export async function updateSettings(data) {
+  await setDoc(settingsDoc, data, { merge: true });
+}
+
+/**
+ * Subscribe to real-time settings updates.
+ * @param {Function} callback - Called with the settings object.
+ * @returns {Function} Unsubscribe function.
+ */
+export function subscribeToSettings(callback) {
+  return onSnapshot(settingsDoc, (snap) => {
+    callback(snap.exists() ? snap.data() : { base_rate: 10 });
+  });
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  TASKS
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -137,6 +173,9 @@ export async function addTask(data) {
     title: data.title || '',
     description: data.description || '',
     price: data.price || 0,
+    complexity: data.complexity || null,
+    estimated_time: data.estimated_time || null,
+    custom_cost: data.custom_cost !== undefined ? data.custom_cost : null,
     category: data.category || '',
     type: data.type || 'ad-hoc',
     recurrence: data.recurrence || null,
@@ -218,6 +257,24 @@ export async function getCompletions(max = 50) {
   return snap.docs.map(docToObj);
 }
 
+/**
+ * Fetch completions within a specific date range.
+ * @param {Date} startDate
+ * @param {Date} endDate
+ * @returns {Promise<Object[]>}
+ */
+export async function getCompletionsForPeriod(startDate, endDate) {
+  const q = query(
+    completionsCol,
+    where('completedAt', '>=', Timestamp.fromDate(startDate)),
+    where('completedAt', '<=', Timestamp.fromDate(endDate)),
+    orderBy('completedAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(docToObj);
+}
+
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  CASHOUTS
 // ═════════════════════════════════════════════════════════════════════════════
@@ -258,29 +315,37 @@ export async function getCashouts(userId) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * Complete a task: mark it done, award money to the user, create a
- * completion record, and — if recurring — calculate the next due date.
- *
- * Uses a Firestore transaction to keep everything consistent.
+ * Mark a task completed, calculating its next due date, incrementing the
+ * doer's balance/earnings, and creating a completion log.
+ * Runs inside a Firestore transaction for atomicity.
+ * Supports userId as an array of IDs for reward splitting.
  *
  * @param {string} taskId - ID of the task being completed.
- * @param {string} userId - ID of the user who completed it.
+ * @param {string|string[]} userId - ID or IDs of the users who completed it.
+ * @param {number} [baseRate=10] - Global base rate for dynamic pricing.
+ * @param {number} [multiplier=1.0] - Completion-time reward multiplier.
  * @returns {Promise<{completionId: string}>}
  */
-export async function completeTask(taskId, userId) {
+export async function completeTask(taskId, userId, baseRate = 10, multiplier = 1.0) {
+  const isArray = Array.isArray(userId);
+  const userIds = isArray ? userId : [userId];
+  if (userIds.length === 0) throw new Error('At least one doer is required.');
+
   const taskRef = doc(db, 'tasks', taskId);
-  const userRef = doc(db, 'users', userId);
+  const userRefs = userIds.map(id => doc(db, 'users', id));
 
   const result = await runTransaction(db, async (transaction) => {
-    // Read both documents inside the transaction
+    // Read task and all user documents inside the transaction
     const taskSnap = await transaction.get(taskRef);
-    const userSnap = await transaction.get(userRef);
+    const userSnaps = await Promise.all(userRefs.map(ref => transaction.get(ref)));
 
     if (!taskSnap.exists()) throw new Error(`Task ${taskId} not found.`);
-    if (!userSnap.exists()) throw new Error(`User ${userId} not found.`);
+    userSnaps.forEach((snap, idx) => {
+      if (!snap.exists()) throw new Error(`User ${userIds[idx]} not found.`);
+    });
 
     const task = { id: taskSnap.id, ...taskSnap.data() };
-    const user = { id: userSnap.id, ...userSnap.data() };
+    const users = userSnaps.map(snap => ({ id: snap.id, ...snap.data() }));
     const now = new Date();
 
     // ── Calculate next due date using the scheduler ──────────────────
@@ -290,81 +355,111 @@ export async function completeTask(taskId, userId) {
     // ── Update the task ──────────────────────────────────────────────
     transaction.update(taskRef, {
       lastCompletedAt: Timestamp.fromDate(now),
-      lastCompletedBy: userId,
+      lastCompletedBy: isArray ? userIds.join(',') : userId,
       isActive: isStillActive,
       nextDueDate: nextDueDate ? Timestamp.fromDate(nextDueDate) : null,
     });
 
-    // ── Award money to the user ──────────────────────────────────────
-    transaction.update(userRef, {
-      balance: increment(task.price || 0),
-      totalEarned: increment(task.price || 0),
+    // ── Award money to the users (split if multiple) ─────────────────
+    const totalReward = calculateFinalReward(task, baseRate, multiplier);
+    const splitPrice = totalReward / userIds.length;
+    let firstCompletionId = '';
+
+    users.forEach((user, idx) => {
+      transaction.update(doc(db, 'users', user.id), {
+        balance: increment(splitPrice),
+        totalEarned: increment(splitPrice),
+      });
+
+      // ── Create completion record for each user ─────────────────────
+      const completionRef = doc(completionsCol);
+      if (idx === 0) firstCompletionId = completionRef.id;
+
+      transaction.set(completionRef, {
+        taskId: task.id,
+        taskTitle: task.title || '',
+        userId: user.id,
+        userName: user.name || '',
+        amount: splitPrice,
+        multiplier,
+        baseRate,
+        completedAt: Timestamp.fromDate(now),
+        previousDueDate: task.nextDueDate || null,
+        splitWith: userIds.filter(id => id !== user.id),
+      });
     });
 
-    // ── Create completion record ─────────────────────────────────────
-    const completionRef = doc(completionsCol);
-    transaction.set(completionRef, {
-      taskId: task.id,
-      taskTitle: task.title || '',
-      userId: user.id,
-      userName: user.name || '',
-      amount: task.price || 0,
-      completedAt: Timestamp.fromDate(now),
-      previousDueDate: task.nextDueDate || null,
-    });
-
-    return { completionId: completionRef.id };
+    return { completionId: firstCompletionId };
   });
 
   return result;
 }
 
 /**
- * Undo/revert a task completion: delete the log, subtract the earnings
- * from the user, and restore the task's active status and previous due date.
+ * Undo/revert a task completion: delete the completion log, subtract the
+ * earnings from the user, and restore the task's active status and previous
+ * due date.
  *
- * Runs inside a Firestore transaction for atomicity.
+ * Uses a single Firestore transaction (no pre-queries) for maximum
+ * reliability. If the task was completed with split rewards, each person's
+ * completion can be undone individually.
  *
  * @param {string} completionId
+ * @returns {Promise<{success: boolean}>}
  */
 export async function revertTaskCompletion(completionId) {
+  if (!completionId) throw new Error('completionId is required');
+
   const completionRef = doc(db, 'completions', completionId);
 
   const result = await runTransaction(db, async (transaction) => {
+    // ── Read everything inside the transaction ───────────────────────
     const compSnap = await transaction.get(completionRef);
     if (!compSnap.exists()) {
-      throw new Error(`Completion record ${completionId} not found.`);
+      throw new Error(`Completion ${completionId} not found.`);
     }
     const comp = compSnap.data();
 
-    const taskRef = doc(db, 'tasks', comp.taskId);
-    const userRef = doc(db, 'users', comp.userId);
+    const taskId = comp.taskId;
+    const userId = comp.userId;
+    if (!taskId) throw new Error('Completion is missing taskId.');
+    if (!userId) throw new Error('Completion is missing userId.');
+
+    const taskRef = doc(db, 'tasks', taskId);
+    const userRef = doc(db, 'users', userId);
 
     const taskSnap = await transaction.get(taskRef);
     const userSnap = await transaction.get(userRef);
 
-    // Revert user earnings if user still exists
+    // ── Deduct reward from the user ──────────────────────────────────
     if (userSnap.exists()) {
-      const refund = comp.amount || 0;
+      const refund = Number(comp.amount) || 0;
       transaction.update(userRef, {
         balance: increment(-refund),
         totalEarned: increment(-refund),
       });
     }
 
-    // Revert task state if task still exists
+    // ── Delete the completion record ─────────────────────────────────
+    transaction.delete(completionRef);
+
+    // ── Restore task to active ───────────────────────────────────────
     if (taskSnap.exists()) {
-      const updates = {
-        isActive: true, // Make it active again
-        nextDueDate: comp.previousDueDate || null,
+      const task = taskSnap.data();
+      let nextDueDate = comp.previousDueDate || null;
+
+      // Fallback: recurring tasks with no previousDueDate → set to now
+      if (!nextDueDate && task.type === 'recurring') {
+        nextDueDate = Timestamp.fromDate(new Date());
+      }
+
+      transaction.update(taskRef, {
+        isActive: true,
+        nextDueDate,
         lastCompletedAt: null,
         lastCompletedBy: null,
-      };
-      transaction.update(taskRef, updates);
+      });
     }
-
-    // Delete completion log
-    transaction.delete(completionRef);
 
     return { success: true };
   });
@@ -441,6 +536,15 @@ export async function uploadAvatar(file, userId) {
 //  CATEGORIES
 // ═════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Fetch all categories (one-time read).
+ * @returns {Promise<Object[]>}
+ */
+export async function getCategories() {
+  const q = query(collection(db, 'categories'), orderBy('createdAt', 'asc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(docToObj);
+}
 async function seedCategories() {
   const defaults = [
     { id: 'cleaning', label: 'Cleaning', emoji: '🧹', createdAt: new Date() },
@@ -533,5 +637,19 @@ export async function deleteCategory(id) {
   for (const docSnap of snap.docs) {
     await updateDoc(docSnap.ref, { category: 'other' });
   }
+}
+
+/**
+ * Update an existing custom category.
+ *
+ * @param {string} id - Category ID.
+ * @param {Object} data - { label, emoji }
+ */
+export async function updateCategory(id, data) {
+  const catRef = doc(db, 'categories', id);
+  await updateDoc(catRef, {
+    label: data.label.trim(),
+    emoji: data.emoji || '📋',
+  });
 }
 

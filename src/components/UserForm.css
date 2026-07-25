@@ -118,7 +118,7 @@
 
 .user-form__color-swatch--active {
   border-color: var(--color-text);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Photo upload ── */

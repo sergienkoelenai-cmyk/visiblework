@@ -50,6 +50,7 @@
 }
 
 /* ── Labels & inputs ── */
+
 .task-form__label {
   display: flex;
   flex-direction: column;
@@ -57,6 +58,14 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-secondary);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.task-form__row > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .task-form__label--flex {
@@ -78,6 +87,9 @@
 .task-form__input,
 .task-form__textarea,
 .task-form__select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -94,6 +106,15 @@
   resize: vertical;
   min-height: 60px;
 }
+
+input[type="date"].task-form__input {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+
 
 .task-form__input:focus,
 .task-form__textarea:focus,
@@ -120,14 +141,11 @@
 .task-form__row {
   display: flex;
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-.task-form__row > * {
-  flex: 1;
-  min-width: 0; /* Prevents flex items from overflowing */
-}
-
-/* ── Toggle group ── */
 .task-form__toggle-group {
   display: flex;
   gap: 0;
@@ -160,68 +178,285 @@
   background: var(--color-surface-active);
 }
 
-/* ── Recurrence section ── */
-.task-form__recurrence {
+/* ── Pricing section (complexity + time + cost badge) ── */
+.task-form__pricing-section {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 14px;
+}
+
+.task-form__pricing-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+/* Segmented control wrapper */
+.task-form__segment-group {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.task-form__segment-btn {
+  flex: 1;
+  padding: 9px 6px;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.task-form__segment-btn + .task-form__segment-btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.task-form__segment-btn:not(.task-form__segment-btn--active):hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+.task-form__segment-btn--active {
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.task-form__segment-btn--low.task-form__segment-btn--active {
+  background: #22c55e;
+}
+
+.task-form__segment-btn--medium.task-form__segment-btn--active {
+  background: #f59e0b;
+}
+
+.task-form__segment-btn--high.task-form__segment-btn--active {
+  background: #ef4444;
+}
+
+.task-form__segment-emoji {
+  font-size: 16px;
+}
+
+.task-form__segment-label {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.task-form__segment-hint {
+  font-size: 9px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Auto-cost badge */
+.task-form__cost-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.task-form__cost-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.task-form__cost-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+.task-form__cost-tag--custom {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.task-form__cost-edit-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 600;
+}
+
+.task-form__cost-edit-btn:hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+.task-form__custom-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn var(--transition-fast) ease;
+}
+
+.task-form__custom-cost-row .task-form__input {
+  width: 110px;
+  flex: none;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.task-form__custom-cost-reset {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.task-form__custom-cost-reset:hover {
+  background: var(--color-surface-active);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* ── Recurrence section ── */
+.task-form__recurrence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   background: var(--color-surface-hover);
+  padding: 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
 }
 
-/* ── Custom dates ── */
-.task-form__custom-dates {
+.task-form__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.task-form__date-row {
+.task-form__dynamic-container {
+  animation: fadeIn var(--transition-fast) ease;
+}
+
+/* ── Weekdays selector ── */
+.task-form__weekdays {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
 }
 
-.task-form__date-remove {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-danger);
-  font-size: 14px;
-  cursor: pointer;
+.task-form__weekday-pill {
+  flex: 1;
+  aspect-ratio: 1;
+  max-width: 36px;
+  min-width: 28px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s;
-}
-
-.task-form__date-remove:hover {
-  background: rgba(255, 82, 82, 0.1);
-}
-
-.task-form__date-add {
-  align-self: flex-start;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--color-border-hover);
-  background: transparent;
-  color: var(--color-accent);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-family);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-  min-height: 40px;
+  padding: 0;
+  transition: all var(--transition-fast);
 }
 
-.task-form__date-add:hover {
-  background: var(--color-surface-active);
+.task-form__weekday-pill--active {
+  background: var(--color-accent);
+  color: #fff;
   border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.task-form__weekday-pill:not(.task-form__weekday-pill--active):hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+}
+
+/* ── Mobile adjustments ── */
+@media (max-width: 480px) {
+  .task-form__row {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* ── Summary section ── */
+.task-form__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--color-accent-bg);
+  border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+
+.task-form__summary-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  letter-spacing: 0.08em;
+}
+
+.task-form__summary-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin: 0;
 }
 
 /* ── Actions ── */

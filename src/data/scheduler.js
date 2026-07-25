@@ -11,6 +11,8 @@
  * Date comparisons are done at DAY granularity (time-of-day is ignored).
  */
 
+import { rrulestr } from 'rrule';
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
@@ -69,18 +71,47 @@ export function calculateNextDueDate(task, completionDate) {
   }
 
   const recurrence = task.recurrence;
-  if (!recurrence || !recurrence.mode) {
+  if (!recurrence) {
     return null;
   }
 
   const today = startOfDay(new Date());
 
+  // Check if it is the new RRULE format (either string or object containing rrule)
+  const rruleString = typeof recurrence === 'string'
+    ? recurrence
+    : (recurrence.rrule || null);
+
+  if (rruleString) {
+    try {
+      const rule = rrulestr(rruleString);
+      // RRule's after finds the next occurrence strictly after completionDate.
+      const next = rule.after(completionDate);
+      return next ? startOfDay(next) : null;
+    } catch (e) {
+      console.error('Failed to calculate next due date via RRule:', e);
+      return null;
+    }
+  }
+
+  if (!recurrence.mode) {
+    return null;
+  }
+
   switch (recurrence.mode) {
     // ── interval_from_completion ──────────────────────────────────────
     // Next due date = completion date + intervalDays
     case 'interval_from_completion': {
-      const interval = recurrence.intervalDays || 1;
-      return startOfDay(addDays(completionDate, interval));
+      const val = recurrence.intervalValue || recurrence.intervalDays || 1;
+      const unit = recurrence.intervalUnit || 'days';
+      if (unit === 'weeks') {
+        return startOfDay(addDays(completionDate, val * 7));
+      } else if (unit === 'months') {
+        return startOfDay(addMonths(completionDate, val));
+      } else {
+        // days (default)
+        return startOfDay(addDays(completionDate, val));
+      }
     }
 
     // ── fixed_interval ───────────────────────────────────────────────
@@ -188,12 +219,14 @@ export function getTaskStatus(task) {
         : new Date(task.nextDueDate)
   );
 
+  if (isNaN(dueDate.getTime())) {
+    return 'upcoming';
+  }
+
   if (dueDate < today) return 'overdue';
   if (dueDate.getTime() === today.getTime()) return 'due_today';
   return 'upcoming';
 }
-
-// ─── Sorting ────────────────────────────────────────────────────────────────
 
 /** Priority ordering for statuses (lower = more urgent). */
 const STATUS_PRIORITY = {
