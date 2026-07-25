@@ -28,15 +28,16 @@ import {
 import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
-import TaskCompletionOverlay from './components/TaskCompletionOverlay'
 import TaskForm from './components/TaskForm'
-import CashoutDialog from './components/CashoutDialog'
-import SettingsPage from './components/SettingsPage'
 import UserForm from './components/UserForm'
+import CashoutDialog from './components/CashoutDialog'
+import TaskCompletionOverlay from './components/TaskCompletionOverlay'
+import SettingsPage from './components/SettingsPage'
 import AnalyticsPage from './components/AnalyticsPage'
 import PullToRefresh from './components/PullToRefresh'
 import FeatsWidget from './components/FeatsWidget'
 import FeatsDrawer from './components/FeatsDrawer'
+import CriticalFocusBlock from './components/CriticalFocusBlock'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
@@ -176,6 +177,14 @@ function App() {
 
   // Split tasks for dashboard sections
   const endOfToday = new Date(now.getTime() + 24*60*60*1000);
+
+  const criticalTasks = tasksWithStatus.filter(t => {
+    if (!t.is_critical) return false;
+    if (t.type === 'always-available' || t.type === 'ad-hoc') return true;
+    if (!t.nextDueDate) return false;
+    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+    return due < endOfToday; // Due today or overdue
+  });
 
   const todayTasks = tasksWithStatus.filter(t => {
     if (t.type === 'always-available' || t.type === 'ad-hoc') return true;
@@ -470,6 +479,15 @@ function App() {
 
       {/* Main Dashboard */}
       <main className="app-main">
+        {/* Critical Focus Block */}
+        <CriticalFocusBlock
+          tasks={criticalTasks}
+          categories={categories}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
+          onCompleteTask={handleCompleteTask}
+        />
+
         {/* Family Members */}
         <FamilyBar users={users} onUserClick={handleUserClick} />
 

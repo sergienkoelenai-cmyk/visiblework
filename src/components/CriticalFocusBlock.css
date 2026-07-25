@@ -1,0 +1,205 @@
+/* ── CriticalFocusBlock ── */
+
+.critical-focus {
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.12) 0%, rgba(255, 140, 0, 0.08) 100%);
+  border: 1px solid rgba(255, 82, 82, 0.35);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(255, 82, 82, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.critical-focus::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff5252, #ff9800);
+}
+
+.critical-focus__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.critical-focus__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #ff5252;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.2px;
+}
+
+.critical-focus__pulse {
+  animation: pulse-glow 2s infinite ease-in-out;
+  display: inline-block;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.85; }
+}
+
+.critical-focus__subtitle {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.critical-focus__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.critical-focus__card {
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 82, 82, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.critical-focus__card:hover {
+  border-color: rgba(255, 82, 82, 0.5);
+  transform: translateY(-1px);
+}
+
+.critical-focus__card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.critical-focus__task-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.critical-focus__emoji {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.critical-focus__task-title-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.critical-focus__task-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.critical-focus__cat-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.critical-focus__badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.critical-focus__badge--overdue {
+  background: rgba(255, 82, 82, 0.18);
+  color: #ff5252;
+  border-color: rgba(255, 82, 82, 0.4);
+  animation: flash-border 2s infinite ease-in-out;
+}
+
+@keyframes flash-border {
+  0%, 100% { border-color: rgba(255, 82, 82, 0.4); }
+  50% { border-color: rgba(255, 82, 82, 0.9); }
+}
+
+.critical-focus__desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.critical-focus__card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.critical-focus__chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.critical-focus__chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.critical-focus__price {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-euro);
+}
+
+.critical-focus__complete-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: #ff5252;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  min-height: 32px;
+  flex-shrink: 0;
+}
+
+.critical-focus__complete-btn:hover {
+  background: #e03e3e;
+  transform: translateY(-1px);
+}
+
+.critical-focus__complete-btn:active {
+  transform: translateY(0);
+}

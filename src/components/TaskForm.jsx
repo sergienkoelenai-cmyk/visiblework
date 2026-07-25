@@ -53,6 +53,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
   const [customInterval, setCustomInterval] = useState('1');
   const [customUnit, setCustomUnit] = useState('days');
   const [fromLastCompletion, setFromLastCompletion] = useState(false);
+  const [isCritical, setIsCritical] = useState(task ? !!task.is_critical : false);
 
   const [errors, setErrors] = useState({});
 
@@ -89,6 +90,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
       setCustomInterval(parsed.customInterval);
       setCustomUnit(parsed.customUnit);
       setFromLastCompletion(parsed.fromLastCompletion);
+      setIsCritical(!!task.is_critical);
     }
     requestAnimationFrame(() => setVisible(true));
   }, [task]);
@@ -237,6 +239,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
       type: computedType,
       icon: icon || null,
       isActive: true,
+      is_critical: isCritical,
       nextDueDate,
       recurrence,
     };
@@ -513,6 +516,29 @@ export default function TaskForm({ task = null, categories = [], baseRate = 0.10
               </button>
             </div>
           )}
+        </div>
+
+        {/* CRITICAL TASK TOGGLE */}
+        <div className="task-form__card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 16px', border: isCritical ? '1px solid rgba(255, 82, 82, 0.4)' : '1px solid var(--color-border)', background: isCritical ? 'rgba(255, 82, 82, 0.06)' : 'var(--color-surface)', borderRadius: 'var(--radius-md)', transition: 'all 0.2s ease' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: isCritical ? 'var(--color-danger)' : 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🛡️ Critical Deadline / Important
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Appears in Critical Focus when due
+            </span>
+          </div>
+          <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', flexShrink: 0, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={isCritical}
+              onChange={(e) => setIsCritical(e.target.checked)}
+              style={{ opacity: 0, width: 0, height: 0 }}
+            />
+            <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isCritical ? '#ff5252' : 'var(--color-border)', transition: '.2s', borderRadius: '24px' }}>
+              <span style={{ position: 'absolute', height: '18px', width: '18px', left: isCritical ? '22px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.2s', borderRadius: '50%' }} />
+            </span>
+          </label>
         </div>
 
         {/* PROGRESSIVE RECURRENCE EDITOR */}

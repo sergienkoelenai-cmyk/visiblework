@@ -186,6 +186,7 @@ export async function addTask(data) {
     type: data.type || 'ad-hoc',
     recurrence: data.recurrence || null,
     isActive: data.isActive !== undefined ? data.isActive : true,
+    is_critical: data.is_critical !== undefined ? !!data.is_critical : false,
     nextDueDate: data.nextDueDate || null,
     lastCompletedAt: null,
     lastCompletedBy: null,
