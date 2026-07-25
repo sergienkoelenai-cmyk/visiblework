@@ -438,7 +438,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
           {!editingCost ? (
             <div className="task-form__cost-badge">
               <span className="task-form__cost-value">
-                €{getTaskBaseCost({ complexity, estimated_time: estimatedTime, custom_cost: customCost }, baseRate)}
+                €{getTaskBaseCost({ complexity, estimated_time: estimatedTime, custom_cost: customCost }, baseRate).toFixed(2)}
               </span>
               <span className={`task-form__cost-tag ${customCost !== null ? 'task-form__cost-tag--custom' : ''}`}>
                 {customCost !== null ? 'custom' : 'auto'}
@@ -460,7 +460,7 @@ export default function TaskForm({ task = null, categories = [], baseRate = 10, 
               <input
                 type="number"
                 min="0"
-                step="1"
+                step="0.01"
                 className="task-form__input"
                 value={customCostInput}
                 autoFocus

@@ -202,8 +202,8 @@ export default function SettingsPage({
             <input
               id="base-rate-input"
               type="number"
-              min="1"
-              step="1"
+              min="0.01"
+              step="0.01"
               className="task-form__input"
               value={baseRateInput}
               onChange={(e) => { setBaseRateInput(e.target.value); setBaseRateSaved(false); }}
@@ -227,9 +227,9 @@ export default function SettingsPage({
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {[
-              { label: 'Low + 15m', formula: `€${Math.round(parseFloat(baseRateInput) * 1.0 * 1.0) || 0}` },
-              { label: 'Medium + 30m', formula: `€${Math.round(parseFloat(baseRateInput) * 1.5 * 1.8) || 0}` },
-              { label: 'High + 1h+', formula: `€${Math.round(parseFloat(baseRateInput) * 2.5 * 3.5) || 0}` },
+              { label: 'Low + 15m', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 1.0 * 1.0 * 100) / 100).toFixed(2)}` },
+              { label: 'Medium + 30m', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 1.5 * 1.8 * 100) / 100).toFixed(2)}` },
+              { label: 'High + 1h+', formula: `€${(Math.round((parseFloat(baseRateInput) || 0) * 2.5 * 3.5 * 100) / 100).toFixed(2)}` },
             ].map(ex => (
               <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
                 {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.formula}</strong>
@@ -517,7 +517,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v1.8.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v1.8.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

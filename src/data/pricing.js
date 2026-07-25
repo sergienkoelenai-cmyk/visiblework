@@ -74,7 +74,7 @@ export const TIME_LABELS = {
  *
  * Priority:
  *  1. task.custom_cost (manual override, if not null/undefined)
- *  2. formula: round(baseRate × complexityMultiplier × timeMultiplier)
+ *  2. formula: baseRate × complexityMultiplier × timeMultiplier (rounded to 2 decimals)
  *  3. task.price (legacy fallback for tasks without the new fields)
  *
  * @param {Object} task
@@ -82,7 +82,7 @@ export const TIME_LABELS = {
  * @param {Complexity|undefined} task.complexity
  * @param {EstimatedTime|undefined} task.estimated_time
  * @param {number|undefined} task.price
- * @param {number} baseRate - Global base rate (e.g. 10)
+ * @param {number} baseRate - Global base rate (e.g. 10 or 0.75)
  * @returns {number}
  */
 export function getTaskBaseCost(task, baseRate) {
@@ -95,7 +95,7 @@ export function getTaskBaseCost(task, baseRate) {
   if (task.complexity && task.estimated_time) {
     const cm = COMPLEXITY_MULTIPLIERS[task.complexity] ?? 1.0;
     const tm = TIME_MULTIPLIERS[task.estimated_time] ?? 1.0;
-    return Math.round(baseRate * cm * tm);
+    return Math.round(baseRate * cm * tm * 100) / 100;
   }
 
   // 3. Legacy fallback — tasks that still only have a static price
@@ -112,7 +112,7 @@ export function getTaskBaseCost(task, baseRate) {
  */
 export function calculateFinalReward(task, baseRate, multiplier = 1.0) {
   const baseCost = getTaskBaseCost(task, baseRate);
-  return Math.round(baseCost * multiplier);
+  return Math.round(baseCost * multiplier * 100) / 100;
 }
 
 // ─── Completion multiplier presets ────────────────────────────────────────────
