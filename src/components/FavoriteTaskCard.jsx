@@ -64,20 +64,11 @@ export default function FavoriteTaskCard({
         </span>
       </div>
 
-      {/* Right Price & Complete Trigger */}
+      {/* Right Price */}
       <div className="favorite-card__right">
         <span className="favorite-card__price">
           €{price.toFixed(2)}
         </span>
-        <button
-          type="button"
-          className="favorite-card__check-btn"
-          onClick={handleClick}
-          title="Complete Task"
-          aria-label={`Complete ${task.title}`}
-        >
-          ✓
-        </button>
       </div>
     </div>
   );

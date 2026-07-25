@@ -233,7 +233,7 @@
 .settings__categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 2px;
 }
 
 .settings__category-item {
@@ -601,7 +601,7 @@
   .settings__categories-grid {
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 2px !important;
   }
 
   .settings__category-item {

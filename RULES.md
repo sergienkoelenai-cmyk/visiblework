@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.4.2  | Remove green check mark buttons from task cards; reduce gap between categories items in Settings to 2px |
 | v2.4.1  | Standardize all task cards to high-density FavoriteTaskCard style; remove 'Due today' header above Favorites |
 | v2.4.0  | Refactored task completion sheet (compact avatars, backdated completion date selector: Today / Yesterday / Custom) |
 | v2.3.0  | High-density FavoriteTaskCard component (removes redundant labels/badges, ~40-50% height reduction for mobile) |
