@@ -421,6 +421,8 @@ function App() {
           <TaskForm
             task={editingTask}
             categories={categories}
+            baseRate={settings.base_rate ?? 0.10}
+            complexityMultipliers={settings.complexity_multipliers}
             onSave={handleSaveTask}
             onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
           />
