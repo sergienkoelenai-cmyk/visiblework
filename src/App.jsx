@@ -26,7 +26,7 @@ import {
   uploadAvatar,
   updateSettings,
 } from './data/store'
-import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate, shouldDisplayScheduledTask, formatNextDueDateLabel } from './data/scheduler'
+import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate, shouldDisplayScheduledTask, formatNextDueDateLabel, toJsDate } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
 import TaskForm from './components/TaskForm'
@@ -108,42 +108,57 @@ function App() {
 
   // --- Database Auto-Fixer for existing tasks with stale due dates ---
   useEffect(() => {
-    if (!currentUser || tasks.length === 0) return
+    if (!currentUser || tasks.length === 0) return;
 
-    const today = new Date()
-    today.setHours(0,0,0,0)
+    let isMounted = true;
 
-    tasks.forEach(async (task) => {
+    async function autoFixStaleTasks() {
       try {
-        if (task.type === 'recurring') {
-          const lastEvent = task.lastCompletedAt || task.lastSkippedAt;
-          if (lastEvent) {
-            const compDate = lastEvent.toDate ? lastEvent.toDate() : new Date(lastEvent.seconds ? lastEvent.seconds * 1000 : lastEvent);
-            if (!isNaN(compDate.getTime())) {
-              const currentDue = task.nextDueDate
-                ? (task.nextDueDate.toDate ? task.nextDueDate.toDate() : new Date(task.nextDueDate.seconds ? task.nextDueDate.seconds * 1000 : task.nextDueDate))
-                : null;
+        const completionsList = await getCompletions(500);
+        const completionMap = {};
+        (completionsList || []).forEach(comp => {
+          const compDate = toJsDate(comp.completedAt);
+          if (comp.taskId && compDate) {
+            if (!completionMap[comp.taskId] || compDate > completionMap[comp.taskId]) {
+              completionMap[comp.taskId] = compDate;
+            }
+          }
+        });
 
+        if (!isMounted) return;
+
+        tasks.forEach(async (task) => {
+          if (!task || task.isActive === false) return;
+          if (task.recurrence || task.type === 'recurring') {
+            const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
+            if (compDate) {
               const compDay = new Date(compDate);
-              compDay.setHours(0,0,0,0);
+              compDay.setHours(0, 0, 0, 0);
 
-              // If nextDueDate is missing OR nextDueDate <= compDay (completed on time, but due date was not bumped)
+              const currentDue = toJsDate(task.nextDueDate);
+
+              // If nextDueDate is missing OR nextDueDate <= compDay (stale due date)
               if (!currentDue || currentDue.getTime() <= compDay.getTime()) {
                 const calculatedDate = calculateNextDueDate(task, compDate);
                 if (calculatedDate && !isNaN(calculatedDate.getTime())) {
-                  console.log(`[Auto-Fix] Bumping stale nextDueDate for "${task.title}" to ${calculatedDate.toISOString()}`);
+                  console.log(`[Auto-Fix] Updating "${task.title}" nextDueDate to ${calculatedDate.toISOString()}`);
                   await updateTask(task.id, {
+                    lastCompletedAt: compDate,
                     nextDueDate: calculatedDate
                   });
                 }
               }
             }
           }
-        }
+        });
       } catch (err) {
-        console.error('[Auto-Fix] Error checking task:', task.title, err);
+        console.error('[Auto-Fix] Error running completion auto-fixer:', err);
       }
-    });
+    }
+
+    autoFixStaleTasks();
+
+    return () => { isMounted = false; };
   }, [currentUser, tasks]);
   useEffect(() => {
     if (page === 'settings' && currentUser) {

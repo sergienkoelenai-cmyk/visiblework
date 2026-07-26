@@ -51,6 +51,41 @@ function addMonths(date, months) {
   return d;
 }
 
+/**
+ * Helper to safely convert Timestamps, strings, numbers, or objects to a JS Date.
+ */
+export function toJsDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val.toDate === 'function') {
+    try {
+      const d = val.toDate();
+      return isNaN(d.getTime()) ? null : d;
+    } catch (e) {
+      // fallback
+    }
+  }
+  if (typeof val === 'object') {
+    if (typeof val.seconds === 'number') {
+      const d = new Date(val.seconds * 1000);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof val._seconds === 'number') {
+      const d = new Date(val._seconds * 1000);
+      return isNaN(d.getTime()) ? null : d;
+    }
+  }
+  if (typeof val === 'number') {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof val === 'string') {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
 // ─── Core API ───────────────────────────────────────────────────────────────
 
 /**
@@ -304,33 +339,26 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
   if (!task || task.isActive === false) return false;
   if (task.type === 'always-available') return true;
   if (task.type === 'ad-hoc') return true;
-  if (!task.nextDueDate) return false;
+
+  const rawDue = toJsDate(task.nextDueDate);
+  if (!rawDue && !task.recurrence) return false;
 
   const today = startOfDay(currentDate);
-  let dueDay = startOfDay(
-    task.nextDueDate instanceof Date
-      ? task.nextDueDate
-      : task.nextDueDate.toDate
-        ? task.nextDueDate.toDate()
-        : new Date(task.nextDueDate)
-  );
+  let dueDay = rawDue ? startOfDay(rawDue) : null;
 
-  if (isNaN(dueDay.getTime())) return false;
-
-  // If task was completed or skipped on or after dueDay, it was completed for this cycle
-  const lastEvent = task.lastCompletedAt || task.lastSkippedAt;
-  if (lastEvent) {
-    const lastEventDate = lastEvent.toDate ? lastEvent.toDate() : new Date(lastEvent.seconds ? lastEvent.seconds * 1000 : lastEvent);
-    if (!isNaN(lastEventDate.getTime())) {
-      const compDay = startOfDay(lastEventDate);
-      if (dueDay <= compDay) {
-        const nextDue = calculateNextDueDate(task, lastEventDate);
-        if (nextDue) {
-          dueDay = startOfDay(nextDue);
-        }
+  // If task was completed or skipped on or after dueDay, or if dueDay is missing/stale
+  const lastEventDate = toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
+  if (lastEventDate) {
+    const compDay = startOfDay(lastEventDate);
+    if (!dueDay || dueDay <= compDay) {
+      const nextDue = calculateNextDueDate(task, lastEventDate);
+      if (nextDue) {
+        dueDay = startOfDay(nextDue);
       }
     }
   }
+
+  if (!dueDay || isNaN(dueDay.getTime())) return false;
 
   // Show ONLY if due today or in the past (overdue)
   return dueDay <= today;
