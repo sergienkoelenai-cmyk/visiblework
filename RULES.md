@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.5.2  | Frameless categories and framed expanded task container in Settings screen (matching Home screen style); PWA skipWaiting update |
 | v2.5.0  | Redesign CreateTaskModal to single-screen high-density layout with progressive disclosure (collapsible schedule & description, inlined reward cost) |
 | v2.4.2  | Remove green check mark buttons from task cards; reduce gap between categories items in Settings to 2px |
 | v2.4.1  | Standardize all task cards to high-density FavoriteTaskCard style; remove 'Due today' header above Favorites |

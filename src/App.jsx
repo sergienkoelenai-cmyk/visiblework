@@ -374,15 +374,32 @@ function App() {
         <div className="app theme-analytics">
           <AnalyticsPage
             users={users}
+            tasks={tasks}
+            categories={categories}
             completions={analyticsCompletions}
+            baseRate={settings.base_rate ?? 0.10}
+            complexityMultipliers={settings.complexity_multipliers}
+            onEditTask={handleEditTask}
             onRevertCompletion={handleRevertCompletion}
             onPeriodChange={handleAnalyticsPeriodChange}
             onBack={() => setPage('dashboard')}
           />
+
+          {showTaskForm && (
+            <TaskForm
+              task={editingTask}
+              categories={categories}
+              baseRate={settings.base_rate ?? 0.10}
+              complexityMultipliers={settings.complexity_multipliers}
+              onSave={handleSaveTask}
+              onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
+            />
+          )}
         </div>
       </PullToRefresh>
     )
   }
+
 
   if (page === 'settings') {
     return (
