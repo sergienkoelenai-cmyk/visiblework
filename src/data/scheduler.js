@@ -85,8 +85,10 @@ export function calculateNextDueDate(task, completionDate) {
   if (rruleString) {
     try {
       const rule = rrulestr(rruleString);
-      // RRule's after finds the next occurrence strictly after completionDate.
-      const next = rule.after(completionDate);
+      // Ensure completionDate reference is set to end-of-day so RRule finds next occurrence on a FUTURE day.
+      const compDateRef = new Date(completionDate);
+      compDateRef.setHours(23, 59, 59, 999);
+      const next = rule.after(compDateRef);
       return next ? startOfDay(next) : null;
     } catch (e) {
       console.error('Failed to calculate next due date via RRule:', e);
@@ -305,7 +307,7 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
   if (!task.nextDueDate) return false;
 
   const today = startOfDay(currentDate);
-  const dueDay = startOfDay(
+  let dueDay = startOfDay(
     task.nextDueDate instanceof Date
       ? task.nextDueDate
       : task.nextDueDate.toDate
@@ -314,6 +316,21 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
   );
 
   if (isNaN(dueDay.getTime())) return false;
+
+  // If task was completed or skipped on or after dueDay, it was completed for this cycle
+  const lastEvent = task.lastCompletedAt || task.lastSkippedAt;
+  if (lastEvent) {
+    const lastEventDate = lastEvent.toDate ? lastEvent.toDate() : new Date(lastEvent.seconds ? lastEvent.seconds * 1000 : lastEvent);
+    if (!isNaN(lastEventDate.getTime())) {
+      const compDay = startOfDay(lastEventDate);
+      if (dueDay <= compDay) {
+        const nextDue = calculateNextDueDate(task, lastEventDate);
+        if (nextDue) {
+          dueDay = startOfDay(nextDue);
+        }
+      }
+    }
+  }
 
   // Show ONLY if due today or in the past (overdue)
   return dueDay <= today;

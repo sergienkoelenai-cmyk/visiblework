@@ -106,41 +106,45 @@ function App() {
     }
   }, [currentUser])
 
-  // --- Database Auto-Fixer for anomalous due dates ---
-  const hasFixedRef = useRef(false)
+  // --- Database Auto-Fixer for existing tasks with stale due dates ---
   useEffect(() => {
-    if (!currentUser || tasks.length === 0 || hasFixedRef.current) return
-    hasFixedRef.current = true
+    if (!currentUser || tasks.length === 0) return
 
     const today = new Date()
     today.setHours(0,0,0,0)
 
     tasks.forEach(async (task) => {
       try {
-        if (task.type === 'recurring' && task.nextDueDate) {
-          const dueDate = task.nextDueDate.toDate ? task.nextDueDate.toDate() : new Date(task.nextDueDate)
-          if (isNaN(dueDate.getTime())) return
+        if (task.type === 'recurring') {
+          const lastEvent = task.lastCompletedAt || task.lastSkippedAt;
+          if (lastEvent) {
+            const compDate = lastEvent.toDate ? lastEvent.toDate() : new Date(lastEvent.seconds ? lastEvent.seconds * 1000 : lastEvent);
+            if (!isNaN(compDate.getTime())) {
+              const currentDue = task.nextDueDate
+                ? (task.nextDueDate.toDate ? task.nextDueDate.toDate() : new Date(task.nextDueDate.seconds ? task.nextDueDate.seconds * 1000 : task.nextDueDate))
+                : null;
 
-          if (dueDate < today) {
-            if (task.lastCompletedAt) {
-              const compDate = task.lastCompletedAt.toDate ? task.lastCompletedAt.toDate() : new Date(task.lastCompletedAt)
-              if (isNaN(compDate.getTime())) return
+              const compDay = new Date(compDate);
+              compDay.setHours(0,0,0,0);
 
-              const calculatedDate = calculateNextDueDate(task, compDate)
-              if (calculatedDate && !isNaN(calculatedDate.getTime()) && calculatedDate > dueDate) {
-                console.log(`[Auto-Fix] Correcting nextDueDate for "${task.title}"`)
-                await updateTask(task.id, {
-                  nextDueDate: calculatedDate
-                })
+              // If nextDueDate is missing OR nextDueDate <= compDay (completed on time, but due date was not bumped)
+              if (!currentDue || currentDue.getTime() <= compDay.getTime()) {
+                const calculatedDate = calculateNextDueDate(task, compDate);
+                if (calculatedDate && !isNaN(calculatedDate.getTime())) {
+                  console.log(`[Auto-Fix] Bumping stale nextDueDate for "${task.title}" to ${calculatedDate.toISOString()}`);
+                  await updateTask(task.id, {
+                    nextDueDate: calculatedDate
+                  });
+                }
               }
             }
           }
         }
       } catch (err) {
-        console.error('[Auto-Fix] Error checking task:', task.title, err)
+        console.error('[Auto-Fix] Error checking task:', task.title, err);
       }
-    })
-  }, [currentUser, tasks])
+    });
+  }, [currentUser, tasks]);
   useEffect(() => {
     if (page === 'settings' && currentUser) {
       getCompletions(100).then(setCompletions)
