@@ -5,6 +5,7 @@ import {
   getTaskBaseCost,
   calculateFinalReward,
 } from '../data/pricing';
+import { isStandardRecurringTask } from '../data/scheduler';
 import './TaskCompletionOverlay.css';
 
 export default function TaskCompletionOverlay({
@@ -326,17 +327,19 @@ export default function TaskCompletionOverlay({
                 Cancel
               </button>
 
-              <button
-                className="tco__skip"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVisible(false);
-                  setTimeout(() => onSkip?.(task), 300);
-                }}
-                type="button"
-              >
-                Skip occurrence
-              </button>
+              {isStandardRecurringTask(task) && (
+                <button
+                  className="tco__skip"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setVisible(false);
+                    setTimeout(() => onSkip?.(task), 300);
+                  }}
+                  type="button"
+                >
+                  Skip occurrence
+                </button>
+              )}
 
               {isSplit && (
                 <button

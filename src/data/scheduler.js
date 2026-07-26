@@ -341,3 +341,20 @@ export function formatNextDueDateLabel(nextDueDate) {
   return due.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+/**
+ * Check if a task has a standard repeat schedule in Daily, Weekly, or Monthly.
+ * Returns false for custom, ad-hoc, or always-available tasks.
+ */
+export function isStandardRecurringTask(task) {
+  if (!task || task.type !== 'recurring' || !task.recurrence) return false;
+  const rec = task.recurrence;
+  if (typeof rec === 'object' && rec.mode === 'interval_from_completion') {
+    return false;
+  }
+  const rruleString = typeof rec === 'string' ? rec : (rec.rrule || null);
+  if (!rruleString) return false;
+  const str = String(rruleString).toUpperCase();
+  return str.includes('FREQ=DAILY') || str.includes('FREQ=WEEKLY') || str.includes('FREQ=MONTHLY');
+}
+
+

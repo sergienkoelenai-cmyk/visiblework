@@ -365,23 +365,23 @@
 }
 
 .tco__skip {
-  padding: 10px 20px;
-  border: none;
+  padding: 10px 18px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 9999px;
-  background: #991B1B;
-  color: #ffffff;
+  background: #FEF2F2;
+  color: #991B1B;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   font-family: var(--font-family);
   cursor: pointer;
   min-height: 40px;
-  box-shadow: 0 3px 10px rgba(153, 27, 27, 0.25);
-  transition: background 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+  transition: all 0.18s ease;
 }
 
 .tco__skip:hover {
-  background: #7F1D1D;
-  box-shadow: 0 4px 14px rgba(127, 29, 29, 0.35);
+  background: #FEE2E2;
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #7F1D1D;
   transform: translateY(-1px);
 }
 

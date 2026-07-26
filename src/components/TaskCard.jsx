@@ -55,7 +55,7 @@ function getLastCompletedText(task) {
   }
 }
 
-export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers = null, onComplete, onSkip, statusLabel }) {
+export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers = null, onComplete, statusLabel }) {
   const status = statusLabel || 'upcoming';
 
   const classes = [
@@ -92,19 +92,6 @@ export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers 
               return '';
             })()}
           </span>
-        )}
-        {onSkip && (
-          <button
-            className="task-card__skip-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSkip(task);
-            }}
-            title="Skip this occurrence"
-            type="button"
-          >
-            ⏭️ Skip
-          </button>
         )}
       </div>
     </div>

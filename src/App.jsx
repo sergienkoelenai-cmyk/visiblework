@@ -500,19 +500,18 @@ function App() {
           baseRate={settings.base_rate ?? 0.10}
           complexityMultipliers={settings.complexity_multipliers}
           onCompleteTask={handleCompleteTask}
-          onSkipTask={handleSkipTask}
         />
 
         {/* Feats & Task Generator Widget */}
         <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />
 
         <section className="dashboard-section">
-          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} onSkipTask={handleSkipTask} showFavorites />
+          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
         </section>
 
         <section className="dashboard-section">
           <h2 className="section-title">Upcoming tasks</h2>
-          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} onSkipTask={handleSkipTask} />
+          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} />
         </section>
 
         {/* Full task list removed */}
