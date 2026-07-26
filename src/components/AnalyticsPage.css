@@ -190,15 +190,15 @@
   text-decoration: underline;
 }
 
-/* Horizontal User Chips Row */
+/* Horizontal / Wrapped User Chips Row */
 .analytics__chips-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  overflow-x: auto;
+  overflow-x: visible;
   padding: 4px 2px 8px 2px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
 }
 
 .analytics__user-chip {
