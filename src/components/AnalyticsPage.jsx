@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import CategorySpendingList from './CategorySpendingList';
+import { getTaskDurationMinutes, formatDurationHoursMinutes } from '../data/pricing';
 import './AnalyticsPage.css';
 
 export default function AnalyticsPage({
@@ -91,6 +92,21 @@ export default function AnalyticsPage({
     return completions.reduce((sum, c) => sum + (c.amount || 0), 0);
   }, [completions]);
 
+  // Total aggregated effort time in period
+  const totalMinutes = useMemo(() => {
+    const taskMap = {};
+    tasks.forEach((t) => {
+      if (t.id) taskMap[t.id] = t;
+    });
+
+    return completions.reduce((sum, c) => {
+      const task = c.taskId ? taskMap[c.taskId] : null;
+      const baseMins = task ? getTaskDurationMinutes(task) : 0;
+      const mult = (c.multiplier !== null && c.multiplier !== undefined) ? Number(c.multiplier) : 1.0;
+      return sum + (baseMins * mult);
+    }, 0);
+  }, [completions, tasks]);
+
   // Formatted YYYY-MM for input type="month"
   const monthInputValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
@@ -143,10 +159,21 @@ export default function AnalyticsPage({
         </div>
       </section>
 
-      {/* ── Total Spent Banner ── */}
+      {/* ── Total Spent & Time Banner ── */}
       <section className="analytics__total-banner glass-panel">
-        <span className="analytics__total-title">TOTAL PAYOUT</span>
-        <span className="analytics__total-amount">€{totalEarned.toFixed(2)}</span>
+        <div className="analytics__total-banner-row">
+          <div className="analytics__total-stat-item">
+            <span className="analytics__total-title">TOTAL PAYOUT</span>
+            <span className="analytics__total-amount">€{totalEarned.toFixed(2)}</span>
+          </div>
+          <div className="analytics__total-stat-divider" />
+          <div className="analytics__total-stat-item">
+            <span className="analytics__total-title">TOTAL TIME</span>
+            <span className="analytics__total-amount analytics__total-amount--time">
+              ⏱️ {formatDurationHoursMinutes(totalMinutes)}
+            </span>
+          </div>
+        </div>
         <span className="analytics__total-sub">in {periodLabel}</span>
       </section>
 

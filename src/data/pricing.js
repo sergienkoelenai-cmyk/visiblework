@@ -75,6 +75,22 @@ export function getTaskDurationMinutes(task) {
   return 15; // default fallback
 }
 
+/**
+ * Format total minutes into a human-readable duration string (e.g., "14h 30m", "45m", "2h").
+ *
+ * @param {number} totalMinutes
+ * @returns {string}
+ */
+export function formatDurationHoursMinutes(totalMinutes) {
+  const mins = Math.round(totalMinutes || 0);
+  if (mins === 0) return '0m';
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+  if (hours === 0) return `${remainingMins}m`;
+  if (remainingMins === 0) return `${hours}h`;
+  return `${hours}h ${remainingMins}m`;
+}
+
 // ─── Core calculations ────────────────────────────────────────────────────────
 
 /**

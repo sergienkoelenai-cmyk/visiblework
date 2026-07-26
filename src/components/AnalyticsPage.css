@@ -116,7 +116,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 28px 24px;
+  padding: 24px;
   text-align: center;
   background: #F0F9FF;
   border: 1px solid rgba(56, 189, 248, 0.25);
@@ -130,23 +130,48 @@
   box-shadow: 0 12px 32px rgba(56, 189, 248, 0.18);
 }
 
+.analytics__total-banner-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.analytics__total-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.analytics__total-stat-divider {
+  width: 1px;
+  height: 44px;
+  background: rgba(56, 189, 248, 0.3);
+}
+
 .analytics__total-title {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #0369A1;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .analytics__total-amount {
-  font-size: 3.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
   color: #0284C7;
   line-height: 1.05;
   letter-spacing: -0.03em;
-  margin-bottom: 6px;
   text-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+}
+
+.analytics__total-amount--time {
+  color: #0369A1;
+  font-size: 2.25rem;
 }
 
 .analytics__total-sub {

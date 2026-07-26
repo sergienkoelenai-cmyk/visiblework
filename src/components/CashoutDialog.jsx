@@ -3,13 +3,11 @@ import Avatar from './Avatar';
 import { getCompletionsForPeriod } from '../data/store';
 import './CashoutDialog.css';
 
-export default function CashoutDialog({ user, onConfirm, onCancel }) {
+export default function CashoutDialog({ user, onConfirm, onCancel, onUndoCompletion }) {
   const [visible, setVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
-  
-  // State for recent completions
   const [recentCompletions, setRecentCompletions] = useState([]);
   const [loadingCompletions, setLoadingCompletions] = useState(true);
 
@@ -19,7 +17,6 @@ export default function CashoutDialog({ user, onConfirm, onCancel }) {
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
-  // Fetch last 3 days of completions for this user
   useEffect(() => {
     const fetchRecentTasks = async () => {
       try {
@@ -29,8 +26,7 @@ export default function CashoutDialog({ user, onConfirm, onCancel }) {
         threeDaysAgo.setHours(0, 0, 0, 0);
 
         const completions = await getCompletionsForPeriod(threeDaysAgo, now);
-        // Filter for this user only
-        const userCompletions = completions.filter(c => c.userId === user.id);
+        const userCompletions = completions.filter((c) => c.userId === user.id);
         setRecentCompletions(userCompletions);
       } catch (err) {
         console.error('Failed to fetch recent completions:', err);
@@ -68,49 +64,82 @@ export default function CashoutDialog({ user, onConfirm, onCancel }) {
     setTimeout(() => onCancel?.(), 300);
   };
 
+  const handleUndo = async (completionId) => {
+    if (!completionId) return;
+    try {
+      await onUndoCompletion?.(completionId);
+      setRecentCompletions((prev) => prev.filter((c) => c.id !== completionId));
+    } catch (err) {
+      console.error('Failed to undo completion:', err);
+    }
+  };
+
   return (
-    <div 
-      className={`cashout ${visible ? 'cashout--visible' : ''}`} 
+    <div
+      className={`cashout-overlay ${visible ? 'cashout-overlay--visible' : ''}`}
       onClick={handleClose}
-      onTouchStart={e => e.stopPropagation()}
-      onTouchMove={e => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
     >
-      <div className="cashout__card" onClick={(e) => e.stopPropagation()}>
+      <div className="cashout-card--compact" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="cashout__header">
-          <h2 className="cashout__heading">{user.name}'s Profile</h2>
-          <button className="cashout__close-btn" onClick={handleClose}>✕</button>
+          <h2 className="cashout__title-text">{user.name}'s Profile</h2>
+          <button className="cashout__close-btn" onClick={handleClose} type="button">
+            ✕
+          </button>
         </div>
 
-        <div className="cashout__user">
+        {/* Floating Pure White User Balance Card */}
+        <div className="cashout__user-card">
           <Avatar user={user} size="lg" />
           <div className="cashout__user-info">
-            <span className="cashout__user-balance" style={{ fontSize: '18px' }}>
-              Balance: <strong style={{ color: 'var(--color-euro)' }}>€{balance.toFixed(2)}</strong>
+            <span className="cashout__user-name">{user.name}</span>
+            <span className="cashout__user-balance">
+              Balance: <strong className="cashout__user-balance-value">€{balance.toFixed(2)}</strong>
             </span>
           </div>
         </div>
 
-        {/* ── Recent Activity ── */}
-        <div className="cashout__recent">
-          <h3 className="cashout__recent-title">Recent Activity (Last 3 days)</h3>
+        {/* Recent Activity Section */}
+        <div className="cashout__section">
+          <span className="cashout__section-label">RECENT ACTIVITY (LAST 3 DAYS)</span>
           {loadingCompletions ? (
-            <div className="cashout__recent-empty">Loading...</div>
+            <div className="cashout__recent-empty">Loading activity...</div>
           ) : recentCompletions.length === 0 ? (
             <div className="cashout__recent-empty">No tasks completed in the last 3 days.</div>
           ) : (
             <ul className="cashout__recent-list">
-              {recentCompletions.map(c => {
-                const date = c.completedAt?.toDate ? c.completedAt.toDate() : new Date(c.completedAt?.seconds ? c.completedAt.seconds * 1000 : c.completedAt);
-                const amount = typeof c.amount === 'number' ? c.amount : 0;
+              {recentCompletions.map((c) => {
+                const date = c.completedAt?.toDate
+                  ? c.completedAt.toDate()
+                  : new Date(c.completedAt?.seconds ? c.completedAt.seconds * 1000 : c.completedAt);
+                const rewardAmount = typeof c.amount === 'number' ? c.amount : 0;
                 return (
-                  <li key={c.id} className="cashout__recent-item">
-                    <div className="cashout__recent-task">
+                  <li key={c.id} className="cashout__recent-row">
+                    <div className="cashout__recent-left">
                       <span className="cashout__recent-name">{c.taskTitle}</span>
                       <span className="cashout__recent-date">
-                        {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {date.toLocaleDateString(undefined, {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </span>
                     </div>
-                    <span className="cashout__recent-reward">€{amount.toFixed(2)}</span>
+                    <div className="cashout__recent-right">
+                      <span className="cashout__recent-reward">€{rewardAmount.toFixed(2)}</span>
+                      {onUndoCompletion && (
+                        <button
+                          type="button"
+                          className="cashout__undo-btn"
+                          onClick={() => handleUndo(c.id)}
+                          title="Undo this task completion"
+                        >
+                          ↩️ Undo
+                        </button>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -118,39 +147,46 @@ export default function CashoutDialog({ user, onConfirm, onCancel }) {
           )}
         </div>
 
-        <hr className="cashout__divider" />
+        {/* Cash Out Form Section */}
+        <div className="cashout__section">
+          <span className="cashout__section-label">CASH OUT</span>
 
-        {/* ── Cashout Form ── */}
-        <h3 className="cashout__recent-title">Cash Out</h3>
-        
-        <label className="cashout__label">
-          Amount (€)
-          <input
-            className={`cashout__input ${error ? 'cashout__input--error' : ''}`}
-            type="number"
-            min="0.01"
-            max={balance}
-            step="0.01"
-            value={amount}
-            onChange={(e) => { setAmount(e.target.value); setError(''); }}
-            placeholder="0.00"
-          />
-          {error && <span className="cashout__error">{error}</span>}
-        </label>
+          <label className="cashout__label">
+            Amount (€)
+            <input
+              className={`cashout__input ${error ? 'cashout__input--error' : ''}`}
+              type="number"
+              min="0.01"
+              max={balance}
+              step="0.01"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setError('');
+              }}
+              placeholder="0.00"
+            />
+            {error && <span className="cashout__error">{error}</span>}
+          </label>
 
-        <label className="cashout__label">
-          Note <span className="cashout__optional">(optional)</span>
-          <input
-            className="cashout__input"
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Bought ice cream 🍦"
-          />
-        </label>
+          <label className="cashout__label">
+            Note <span className="cashout__optional">(optional)</span>
+            <input
+              className="cashout__input"
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Bought ice cream 🍦"
+            />
+          </label>
+        </div>
 
+        {/* Actions */}
         <div className="cashout__actions">
-          <button type="button" className="cashout__btn cashout__btn--confirm" onClick={handleConfirm}>
+          <button type="button" className="cashout__btn-cancel" onClick={handleClose}>
+            Cancel
+          </button>
+          <button type="button" className="btn btn-primary cashout__btn-confirm" onClick={handleConfirm}>
             Confirm Cash Out
           </button>
         </div>

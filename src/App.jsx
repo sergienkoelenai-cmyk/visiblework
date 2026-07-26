@@ -239,6 +239,17 @@ function App() {
     setCompletingTask(null)
   }, [settings.base_rate, settings.complexity_multipliers])
 
+  const handleUndoCompletion = useCallback(async (completionId) => {
+    try {
+      await revertTaskCompletion(completionId);
+      setToastMessage('Completion undone');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      console.error('Failed to undo completion:', err);
+      alert('Failed to undo: ' + err.message);
+    }
+  }, []);
+
   const handleToggleFavorite = useCallback(async (taskId, isFavorite) => {
     try {
       await updateTask(taskId, { isFavorite })
@@ -593,6 +604,7 @@ function App() {
           user={cashoutUser_}
           onConfirm={handleCashout}
           onCancel={() => setCashoutUser(null)}
+          onUndoCompletion={handleUndoCompletion}
         />
       )}
 

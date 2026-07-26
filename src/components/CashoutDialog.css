@@ -1,213 +1,190 @@
-/* ── CashoutDialog ── */
+/* ── CashoutDialog (Soft Pill & Tinted Canvas System) ── */
 
-.cashout {
+.cashout-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
+  overflow: hidden;
 }
 
-.cashout--visible {
+.cashout-overlay--visible {
   opacity: 1;
 }
 
-.cashout__card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  max-width: 420px;
-  width: 90vw;
+/* ── Modal Card (Soft Warm Ambient Canvas) ── */
+.cashout-card--compact {
+  background: var(--color-accent-soft, #FFF7ED);
+  border: none;
+  border-radius: 28px;
+  padding: 20px 20px 24px;
+  max-width: 440px;
+  width: 100%;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: var(--shadow-lg);
-  transform: translateY(30px);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 14px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.14);
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-overflow-scrolling: touch;
 }
 
-.cashout--visible .cashout__card {
+.cashout-overlay--visible .cashout-card--compact {
   transform: translateY(0);
 }
 
-.cashout__heading {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-text);
+/* ── Header Bar ── */
+.cashout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 2px;
 }
 
-/* ── User section ── */
-.cashout__user {
+.cashout__title-text {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text, #0F172A);
+}
+
+.cashout__close-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-secondary, #64748B);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cashout__close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--color-text, #0F172A);
+}
+
+/* ── Floating Pure White User Balance Card ── */
+.cashout__user-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .cashout__user-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .cashout__user-name {
   font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  color: var(--color-text, #0F172A);
 }
 
 .cashout__user-balance {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748B);
 }
 
-.cashout__user-balance strong {
-  color: var(--color-euro);
+.cashout__user-balance-value {
+  font-weight: 800;
+  color: var(--color-euro, #0284C7);
+}
+
+/* ── Section Block ── */
+.cashout__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.cashout__section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 /* ── Inputs ── */
 .cashout__label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
+  gap: 4px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #64748B);
 }
 
 .cashout__optional {
   font-weight: 400;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #8C8C9E);
 }
 
 .cashout__input {
-  background: var(--color-surface-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  padding: 11px 16px;
+  font-size: 14px;
   font-family: var(--font-family);
-  color: var(--color-text);
+  color: var(--color-text, #0F172A);
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
   min-height: 44px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
 .cashout__input:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-glow);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 2.5px var(--color-accent-glow, rgba(56, 189, 248, 0.35));
 }
 
 .cashout__input--error {
-  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
 }
 
 .cashout__error {
-  font-size: 12px;
-  color: var(--color-danger);
+  font-size: 11px;
+  color: var(--color-danger, #EF4444);
   font-weight: 500;
+  margin-top: 2px;
 }
 
-/* ── Actions ── */
-.cashout__actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 4px;
-}
-
-.cashout__btn {
-  padding: 12px 24px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-family);
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  min-height: 44px;
-}
-
-.cashout__btn:active {
-  transform: scale(0.97);
-}
-
-.cashout__btn--cancel {
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
-.cashout__btn--cancel:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.cashout__btn--confirm {
-  background: var(--color-success);
-  color: #fff;
-}
-
-.cashout__btn--confirm:hover {
-  box-shadow: var(--shadow-glow-success);
-}
-
-/* ── Header & Recent Activity ── */
-.cashout__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cashout__close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 4px;
-}
-
-.cashout__close-btn:hover {
-  color: var(--color-text);
-}
-
-.cashout__divider {
-  border: none;
-  border-top: 1px solid var(--color-border);
-  margin: 0;
-}
-
-.cashout__recent {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cashout__recent-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
+/* ── Recent Activity Section ── */
 .cashout__recent-empty {
-  font-size: 14px;
-  color: var(--color-text-muted);
+  font-size: 13px;
+  color: var(--color-text-muted, #8C8C9E);
   text-align: center;
-  padding: 16px 0;
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  font-style: italic;
 }
 
 .cashout__recent-list {
@@ -219,49 +196,126 @@
   gap: 8px;
   max-height: 180px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 2px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-.cashout__recent-list::-webkit-scrollbar {
-  width: 4px;
-}
-.cashout__recent-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-.cashout__recent-list::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
-}
-
-.cashout__recent-item {
+.cashout__recent-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
+  padding: 10px 14px;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 14px;
+  font-size: 13px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease;
 }
 
-.cashout__recent-task {
+.cashout__recent-row:hover {
+  transform: translateX(2px);
+}
+
+.cashout__recent-left {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .cashout__recent-name {
-  font-weight: 500;
-  color: var(--color-text);
+  font-weight: 600;
+  color: var(--color-text, #0F172A);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cashout__recent-date {
-  font-size: 12px;
-  color: var(--color-text-muted);
+  font-size: 11px;
+  color: var(--color-text-muted, #8C8C9E);
+}
+
+.cashout__recent-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .cashout__recent-reward {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-euro, #0284C7);
+}
+
+.cashout__undo-btn {
+  background: rgba(56, 189, 248, 0.1);
+  color: #0284C7;
+  border: none;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cashout__undo-btn:hover {
+  background: #0284C7;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+/* ── Footer Actions ── */
+.cashout__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.cashout__btn-cancel {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-secondary, #64748B);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--color-euro);
+  font-family: var(--font-family);
+  cursor: pointer;
+  min-height: 42px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cashout__btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text, #0F172A);
+}
+
+.cashout__btn-confirm {
+  flex: 1.5;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 9999px;
+  min-height: 42px;
+  background: var(--color-success, #10B981);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cashout__btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
 }
