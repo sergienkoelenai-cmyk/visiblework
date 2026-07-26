@@ -259,13 +259,17 @@ export default function SettingsPage({
                 <div
                   className="settings__category-header-row"
                   onClick={() => toggleTaskCat(cat.id)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: isCatExpanded ? '1px solid var(--color-border)' : 'none', paddingBottom: isCatExpanded ? '8px' : 0, cursor: 'pointer', userSelect: 'none' }}
                 >
-                  <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ display: 'inline-block', fontSize: '12px', transition: 'transform 0.2s ease', transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
+                  <h3 className="settings__category-title">
+                    <span
+                      className="settings__category-chevron"
+                      style={{ transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >
+                      ▶
+                    </span>
                     <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={18} />
                     {cat.label}
-                    <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+                    <span className="settings__category-count">
                       {totalTasksInCat}
                     </span>
                   </h3>
@@ -312,7 +316,7 @@ export default function SettingsPage({
                     )}
 
                     {!hasAnyTasks && (
-                      <p className="settings__category-empty" style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, paddingLeft: '4px' }}>No tasks in this category.</p>
+                      <p className="settings__category-empty">No tasks in this category.</p>
                     )}
                   </div>
                 )}
