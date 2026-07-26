@@ -14,6 +14,7 @@ export default function TaskCompletionOverlay({
   complexityMultipliers = null,
   onConfirm,
   onCancel,
+  onSkip,
   onToggleFavorite,
 }) {
   const [confirmed, setConfirmed] = useState(false);
@@ -323,6 +324,18 @@ export default function TaskCompletionOverlay({
                 type="button"
               >
                 Cancel
+              </button>
+
+              <button
+                className="tco__skip"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVisible(false);
+                  setTimeout(() => onSkip?.(task), 300);
+                }}
+                type="button"
+              >
+                Skip occurrence
               </button>
 
               {isSplit && (

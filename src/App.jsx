@@ -16,6 +16,7 @@ import {
   deleteCategory,
   completeTask, 
   revertTaskCompletion,
+  skipTask,
   cashoutUser, 
   getCompletions, 
   getCompletionsForPeriod,
@@ -25,7 +26,7 @@ import {
   uploadAvatar,
   updateSettings,
 } from './data/store'
-import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate } from './data/scheduler'
+import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate, shouldDisplayScheduledTask, formatNextDueDateLabel } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
 import TaskForm from './components/TaskForm'
@@ -69,6 +70,7 @@ function App() {
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [showFeatsDrawer, setShowFeatsDrawer] = useState(false)
+  const [toastMessage, setToastMessage] = useState(null)
 
   // --- Auth subscription ---
   useEffect(() => {
@@ -78,8 +80,6 @@ function App() {
     })
     return unsubscribe
   }, [])
-
-
 
   // --- Real-time subscriptions ---
   useEffect(() => {
@@ -114,7 +114,6 @@ function App() {
 
     const today = new Date()
     today.setHours(0,0,0,0)
-
 
     tasks.forEach(async (task) => {
       try {
@@ -156,16 +155,10 @@ function App() {
   threeDaysFromNow.setDate(now.getDate() + 3);
   threeDaysFromNow.setHours(23,59,59,999);
 
-  // Active tasks (including always-available, ad-hoc, and those due within next 3 days)
+  // Active tasks (enforcing strict scheduled task visibility: due today or overdue)
   const activeTasks = tasks.filter(t => {
     if (!t.isActive) return false;
-    if (t.type === 'always-available') return true;
-    if (t.type === 'ad-hoc') return true;
-    if (t.nextDueDate) {
-      const dueDate = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
-      return dueDate <= threeDaysFromNow;
-    }
-    return true;
+    return shouldDisplayScheduledTask(t, now);
   });
 
   // Sort and add status
@@ -175,28 +168,15 @@ function App() {
     status: getTaskStatus(t),
   }));
 
-  // Split tasks for dashboard sections
-  const endOfToday = new Date(now.getTime() + 24*60*60*1000);
+  const criticalTasks = tasksWithStatus.filter(t => t.is_critical && shouldDisplayScheduledTask(t, now));
 
-  const criticalTasks = tasksWithStatus.filter(t => {
-    if (!t.is_critical) return false;
-    if (t.type === 'always-available' || t.type === 'ad-hoc') return true;
+  const todayTasks = tasksWithStatus.filter(t => shouldDisplayScheduledTask(t, now));
+
+  const upcomingTasks = tasks.filter(t => {
+    if (!t.isActive || t.type === 'always-available' || t.type === 'ad-hoc') return false;
     if (!t.nextDueDate) return false;
     const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
-    return due < endOfToday; // Due today or overdue
-  });
-
-  const todayTasks = tasksWithStatus.filter(t => {
-    if (t.type === 'always-available' || t.type === 'ad-hoc') return true;
-    if (!t.nextDueDate) return false;
-    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
-    return due < endOfToday; // Includes overdue and due today
-  });
-
-  const upcomingTasks = tasksWithStatus.filter(t => {
-    if (t.type === 'always-available' || t.type === 'ad-hoc') return false;
-    if (!t.nextDueDate) return false;
-    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+    const endOfToday = new Date(now.getTime() + 24*60*60*1000);
     return due >= endOfToday && due <= threeDaysFromNow;
   });
 
@@ -204,6 +184,20 @@ function App() {
   const handleCompleteTask = useCallback((task) => {
     setCompletingTask(task)
   }, [])
+
+  const handleSkipTask = useCallback(async (task) => {
+    try {
+      const res = await skipTask(task.id);
+      const label = formatNextDueDateLabel(res.nextDueDate);
+      const lower = label.toLowerCase();
+      const formattedDue = lower === 'today' || lower === 'tomorrow' ? lower : `on ${label}`;
+      setToastMessage(`Task skipped. Next due ${formattedDue}`);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err) {
+      console.error('Failed to skip task:', err);
+      alert('Failed to skip task: ' + err.message);
+    }
+  }, []);
 
   const handleConfirmCompletion = useCallback(async (taskId, userId, multiplier = 1.0, completedAtDate = null) => {
     await completeTask(taskId, userId, settings.base_rate ?? 0.10, multiplier, settings.complexity_multipliers, completedAtDate)
@@ -506,22 +500,30 @@ function App() {
           baseRate={settings.base_rate ?? 0.10}
           complexityMultipliers={settings.complexity_multipliers}
           onCompleteTask={handleCompleteTask}
+          onSkipTask={handleSkipTask}
         />
 
         {/* Feats & Task Generator Widget */}
         <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />
 
         <section className="dashboard-section">
-          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
+          <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} onSkipTask={handleSkipTask} showFavorites />
         </section>
 
         <section className="dashboard-section">
           <h2 className="section-title">Upcoming tasks</h2>
-          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} />
+          <TaskList tasks={upcomingTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} onSkipTask={handleSkipTask} />
         </section>
 
         {/* Full task list removed */}
       </main>
+
+      {/* --- Toast Notification Banner --- */}
+      {toastMessage && (
+        <div className="toast-notification">
+          <span>⏭️ {toastMessage}</span>
+        </div>
+      )}
 
       {/* --- Modals / Overlays --- */}
 
@@ -533,6 +535,10 @@ function App() {
           complexityMultipliers={settings.complexity_multipliers}
           onConfirm={handleConfirmCompletion}
           onCancel={() => setCompletingTask(null)}
+          onSkip={(taskToSkip) => {
+            setCompletingTask(null);
+            handleSkipTask(taskToSkip);
+          }}
           onToggleFavorite={handleToggleFavorite}
         />
       )}

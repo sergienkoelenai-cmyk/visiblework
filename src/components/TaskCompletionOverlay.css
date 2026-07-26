@@ -364,6 +364,27 @@
   color: var(--color-text);
 }
 
+.tco__skip {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 9999px;
+  background: #991B1B;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  min-height: 40px;
+  box-shadow: 0 3px 10px rgba(153, 27, 27, 0.25);
+  transition: background 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.tco__skip:hover {
+  background: #7F1D1D;
+  box-shadow: 0 4px 14px rgba(127, 29, 29, 0.35);
+  transform: translateY(-1px);
+}
+
 .tco__confirm-split {
   padding: 10px 24px;
   font-size: 13px;

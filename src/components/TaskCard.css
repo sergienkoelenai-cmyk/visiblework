@@ -123,3 +123,22 @@
 .task-card--due-today {
   border-color: rgba(255, 167, 38, 0.2);
 }
+
+.task-card__skip-btn {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #CBD5E1;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 2px;
+}
+
+.task-card__skip-btn:hover {
+  background: #E2E8F0;
+  color: #334155;
+  border-color: #94A3B8;
+}

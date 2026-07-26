@@ -9,6 +9,7 @@ export default function CriticalFocusBlock({
   baseRate = 0.10,
   complexityMultipliers,
   onCompleteTask,
+  onSkipTask,
 }) {
   if (!tasks || tasks.length === 0) return null;
 
@@ -100,13 +101,25 @@ export default function CriticalFocusBlock({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className="critical-focus__complete-btn"
-                  onClick={() => onCompleteTask?.(task)}
-                >
-                  ✓ Complete
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {onSkipTask && (
+                    <button
+                      type="button"
+                      className="task-card__skip-btn"
+                      onClick={() => onSkipTask?.(task)}
+                      title="Skip this occurrence"
+                    >
+                      ⏭️ Skip
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="critical-focus__complete-btn"
+                    onClick={() => onCompleteTask?.(task)}
+                  >
+                    ✓ Complete
+                  </button>
+                </div>
               </div>
             </div>
           );

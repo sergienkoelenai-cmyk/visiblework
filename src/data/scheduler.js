@@ -258,3 +258,86 @@ export function sortTasksByUrgency(tasks) {
     return (b.price || 0) - (a.price || 0);
   });
 }
+
+/**
+ * Check if a task is scheduled for today.
+ */
+export function isScheduledForToday(task, currentDate = new Date()) {
+  if (!task) return false;
+  if (task.type === 'always-available') return true;
+  if (!task.nextDueDate) return false;
+  const today = startOfDay(currentDate);
+  const dueDay = startOfDay(
+    task.nextDueDate instanceof Date
+      ? task.nextDueDate
+      : task.nextDueDate.toDate
+        ? task.nextDueDate.toDate()
+        : new Date(task.nextDueDate)
+  );
+  return !isNaN(dueDay.getTime()) && dueDay.getTime() === today.getTime();
+}
+
+/**
+ * Check if a task is overdue.
+ */
+export function isTaskOverdue(task, currentDate = new Date()) {
+  if (!task || task.type === 'always-available' || task.type === 'ad-hoc') return false;
+  if (!task.nextDueDate) return false;
+  const today = startOfDay(currentDate);
+  const dueDay = startOfDay(
+    task.nextDueDate instanceof Date
+      ? task.nextDueDate
+      : task.nextDueDate.toDate
+        ? task.nextDueDate.toDate()
+        : new Date(task.nextDueDate)
+  );
+  return !isNaN(dueDay.getTime()) && dueDay < today;
+}
+
+/**
+ * Determines whether a scheduled/recurring task should be visible in active task lists.
+ * Enforces rule: Visible ONLY if due today OR overdue/missed.
+ */
+export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
+  if (!task || task.isActive === false) return false;
+  if (task.type === 'always-available') return true;
+  if (task.type === 'ad-hoc') return true;
+  if (!task.nextDueDate) return false;
+
+  const today = startOfDay(currentDate);
+  const dueDay = startOfDay(
+    task.nextDueDate instanceof Date
+      ? task.nextDueDate
+      : task.nextDueDate.toDate
+        ? task.nextDueDate.toDate()
+        : new Date(task.nextDueDate)
+  );
+
+  if (isNaN(dueDay.getTime())) return false;
+
+  // Show ONLY if due today or in the past (overdue)
+  return dueDay <= today;
+}
+
+/**
+ * Format a readable label for a next due date (e.g., "Today", "Tomorrow", "Wed, Aug 5").
+ */
+export function formatNextDueDateLabel(nextDueDate) {
+  if (!nextDueDate) return 'soon';
+  const due = nextDueDate instanceof Date
+    ? nextDueDate
+    : nextDueDate.toDate
+      ? nextDueDate.toDate()
+      : new Date(nextDueDate);
+  if (isNaN(due.getTime())) return 'soon';
+
+  const today = startOfDay(new Date());
+  const dueDay = startOfDay(due);
+  const diffMs = dueDay.getTime() - today.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  return due.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+

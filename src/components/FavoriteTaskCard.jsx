@@ -33,6 +33,7 @@ export default function FavoriteTaskCard({
   baseRate = 0.10,
   complexityMultipliers = null,
   onComplete,
+  onSkip,
 }) {
   const icon = task.icon || task.categoryEmoji || '📋';
   const price = getTaskBaseCost(task, baseRate, complexityMultipliers);
@@ -74,6 +75,19 @@ export default function FavoriteTaskCard({
         <span className="favorite-card__price">
           €{price.toFixed(2)}
         </span>
+        {onSkip && (
+          <button
+            className="task-card__skip-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip(task);
+            }}
+            title="Skip this occurrence"
+            type="button"
+          >
+            ⏭️ Skip
+          </button>
+        )}
       </div>
     </div>
   );

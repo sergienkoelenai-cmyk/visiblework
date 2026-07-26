@@ -404,6 +404,58 @@ export async function completeTask(taskId, userId, baseRate = 0.10, multiplier =
 }
 
 /**
+ * Skip a scheduled task instance: recalculates its next due date,
+ * sets amount = 0 with status = "skipped", and creates an audit log entry.
+ *
+ * Runs inside a Firestore transaction.
+ *
+ * @param {string} taskId - ID of task being skipped.
+ * @returns {Promise<{nextDueDate: Date|null, completionId: string}>}
+ */
+export async function skipTask(taskId) {
+  if (!taskId) throw new Error('taskId is required to skip a task');
+
+  const taskRef = doc(db, 'tasks', taskId);
+
+  const result = await runTransaction(db, async (transaction) => {
+    const taskSnap = await transaction.get(taskRef);
+    if (!taskSnap.exists()) throw new Error(`Task ${taskId} not found.`);
+
+    const task = { id: taskSnap.id, ...taskSnap.data() };
+    const now = new Date();
+
+    // Calculate next due date after today
+    const nextDueDate = calculateNextDueDate(task, now);
+    const isStillActive = nextDueDate !== null;
+
+    // Update task
+    transaction.update(taskRef, {
+      lastSkippedAt: Timestamp.fromDate(now),
+      isActive: isStillActive,
+      nextDueDate: nextDueDate ? Timestamp.fromDate(nextDueDate) : null,
+    });
+
+    // Create skipped audit record in completions collection
+    const completionRef = doc(completionsCol);
+    transaction.set(completionRef, {
+      taskId: task.id,
+      taskTitle: task.title || '',
+      userId: 'system',
+      userName: 'Skipped',
+      amount: 0,
+      status: 'skipped',
+      completedAt: Timestamp.fromDate(now),
+      previousDueDate: task.nextDueDate || null,
+    });
+
+    return { nextDueDate, completionId: completionRef.id };
+  });
+
+  return result;
+}
+
+
+/**
  * Undo/revert a task completion: delete the completion log, subtract the
  * earnings from the user, and restore the task's active status and previous
  * due date.
