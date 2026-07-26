@@ -119,9 +119,12 @@ export function calculateNextDueDate(task, completionDate) {
 
   if (rruleString) {
     try {
-      const rule = rrulestr(rruleString);
+      const dtstartAnchor = task.created_at
+        ? (toJsDate(task.created_at) || new Date(2020, 0, 1))
+        : new Date(2020, 0, 1);
+      const rule = rrulestr(rruleString, { dtstart: dtstartAnchor });
       // Ensure completionDate reference is set to end-of-day so RRule finds next occurrence on a FUTURE day.
-      const compDateRef = new Date(completionDate);
+      const compDateRef = new Date(compDate);
       compDateRef.setHours(23, 59, 59, 999);
       const next = rule.after(compDateRef);
       return next ? startOfDay(next) : null;
@@ -354,7 +357,18 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
       const nextDue = calculateNextDueDate(task, lastEventDate);
       if (nextDue) {
         dueDay = startOfDay(nextDue);
+      } else {
+        // Recurrence schedule is exhausted (met end date)! Hide task.
+        return false;
       }
+    }
+  } else if (!dueDay && task.recurrence) {
+    const created = toJsDate(task.created_at) || today;
+    const computed = calculateNextDueDate(task, created);
+    if (computed) {
+      dueDay = startOfDay(computed);
+    } else {
+      return false;
     }
   }
 

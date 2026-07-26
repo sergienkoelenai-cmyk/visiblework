@@ -131,11 +131,11 @@ function App() {
           if (!task || task.isActive === false) return;
           if (task.recurrence || task.type === 'recurring') {
             const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
+            const currentDue = toJsDate(task.nextDueDate);
+
             if (compDate) {
               const compDay = new Date(compDate);
               compDay.setHours(0, 0, 0, 0);
-
-              const currentDue = toJsDate(task.nextDueDate);
 
               // If nextDueDate is missing OR nextDueDate <= compDay (stale due date)
               if (!currentDue || currentDue.getTime() <= compDay.getTime()) {
@@ -146,7 +146,23 @@ function App() {
                     lastCompletedAt: compDate,
                     nextDueDate: calculatedDate
                   });
+                } else {
+                  console.log(`[Auto-Fix] Deactivating exhausted task "${task.title}"`);
+                  await updateTask(task.id, {
+                    lastCompletedAt: compDate,
+                    nextDueDate: null,
+                    isActive: false
+                  });
                 }
+              }
+            } else if (currentDue) {
+              const calculatedDate = calculateNextDueDate(task, currentDue);
+              if (!calculatedDate) {
+                console.log(`[Auto-Fix] Deactivating expired task "${task.title}"`);
+                await updateTask(task.id, {
+                  nextDueDate: null,
+                  isActive: false
+                });
               }
             }
           }
