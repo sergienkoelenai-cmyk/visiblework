@@ -1,0 +1,16 @@
+/* ── IconBadge ── */
+
+.icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* size + border-radius set inline for flexibility */
+}
+
+.icon-badge__emoji {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import EmojiPicker from 'emoji-picker-react';
+import AppEmoji from './AppEmoji';
 import { RRule, rrulestr } from 'rrule';
 import {
   COMPLEXITY,
@@ -36,7 +37,8 @@ export default function TaskForm({
 
   // Pricing state
   const [complexity, setComplexity] = useState(COMPLEXITY.LOW);
-  const [durationInput, setDurationInput] = useState('15');
+  const [durationInput, setDurationInput] = useState('10');
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customCost, setCustomCost] = useState(null); // null = auto
   const [editingCost, setEditingCost] = useState(false);
   const [customCostInput, setCustomCostInput] = useState('');
@@ -77,7 +79,15 @@ export default function TaskForm({
 
       // Pricing fields
       setComplexity(task.complexity || COMPLEXITY.LOW);
-      setDurationInput(String(getTaskDurationMinutes(task)));
+      const loadedDuration = String(getTaskDurationMinutes(task));
+      const isPreset = DURATION_PRESETS.some(p => String(p.value) === loadedDuration);
+      if (isPreset) {
+        setDurationInput(loadedDuration);
+        setIsCustomDuration(false);
+      } else {
+        setDurationInput(loadedDuration);
+        setIsCustomDuration(true);
+      }
       if (task.custom_cost !== null && task.custom_cost !== undefined) {
         setCustomCost(task.custom_cost);
         setCustomCostInput(String(task.custom_cost));
@@ -296,7 +306,7 @@ export default function TaskForm({
 
   return (
     <div
-      className={`task-form-overlay ${visible ? 'task-form-overlay--visible' : ''}`}
+      className={`task-form-overlay theme-settings ${visible ? 'task-form-overlay--visible' : ''}`}
       onClick={handleClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
@@ -333,7 +343,7 @@ export default function TaskForm({
               }}
               title="Choose Icon"
             >
-              {icon || '📋'}
+              <AppEmoji symbol={icon || '\u{1F4CB}'} size={22} />
             </button>
             {showEmojiPicker && (
               <div className="task-form__emoji-popover">
@@ -361,7 +371,6 @@ export default function TaskForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Vacuum living room"
-              autoFocus
             />
             {errors.title && (
               <span className="task-form__error">{errors.title}</span>
@@ -520,7 +529,7 @@ export default function TaskForm({
 
           <div className="task-form__pills-row">
             {DURATION_PRESETS.map((preset) => {
-              const active = durationMinutes === preset.value;
+              const active = !isCustomDuration && durationMinutes === preset.value;
               return (
                 <button
                   key={preset.value}
@@ -530,6 +539,7 @@ export default function TaskForm({
                   }`}
                   onClick={() => {
                     setDurationInput(String(preset.value));
+                    setIsCustomDuration(false);
                     setCustomCost(null);
                     setEditingCost(false);
                   }}
@@ -538,6 +548,35 @@ export default function TaskForm({
                 </button>
               );
             })}
+            <button
+              type="button"
+              className={`task-form__duration-pill ${
+                isCustomDuration ? 'task-form__duration-pill--active' : ''
+              }`}
+              onClick={() => {
+                setIsCustomDuration(true);
+                setDurationInput('');
+                setCustomCost(null);
+                setEditingCost(false);
+              }}
+            >
+              Custom
+            </button>
+            {isCustomDuration && (
+              <input
+                type="number"
+                min="1"
+                max="480"
+                className="task-form__input task-form__custom-dur-input"
+                value={durationInput}
+                onChange={(e) => {
+                  setDurationInput(e.target.value);
+                  setCustomCost(null);
+                }}
+                placeholder="min"
+                autoFocus
+              />
+            )}
           </div>
         </div>
 

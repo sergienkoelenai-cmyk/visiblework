@@ -1,35 +1,87 @@
-/* ── FamilyBar ── */
+/* ── FamilyBar — Single Row User Balance Chips ── */
 
 .family-bar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  padding: 20px 24px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-surface-active) transparent;
+  padding: 2px 0;
 }
 
 .family-bar::-webkit-scrollbar {
-  height: 6px;
+  display: none;
 }
 
-.family-bar::-webkit-scrollbar-track {
-  background: transparent;
+/* Individual user chip capsule */
+.family-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px 0 5px;
+  background: #F8FAFC;
+  border: 1px solid #F1F5F9;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  font-family: var(--font-family);
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.family-bar::-webkit-scrollbar-thumb {
-  background: var(--color-surface-active);
-  border-radius: var(--radius-full);
+.family-bar__chip:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
-.family-bar__track {
+.family-bar__chip:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+/* Avatar circle — 26x26px */
+.family-bar__chip-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
   display: flex;
-  gap: 32px;
+  align-items: center;
   justify-content: center;
-  min-width: min-content;
+  flex-shrink: 0;
+}
+
+.family-bar__chip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.family-bar__chip-initials {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+/* Inline Name + Balance */
+.family-bar__chip-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #0F172A;
+  line-height: 1;
+}
+
+.family-bar__chip-balance {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d97706; /* amber/gold accent */
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }

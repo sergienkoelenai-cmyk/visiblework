@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import TaskCard from './TaskCard';
 import FavoriteTaskCard from './FavoriteTaskCard';
+import { CategoryIcon } from './IconBadge';
 import './TaskList.css';
 
 export default function TaskList({ tasks = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
@@ -57,41 +58,20 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
         <h3
           className="task-list__group-label"
           onClick={() => toggleCategory(cat.id)}
-          style={{
-            color: 'var(--color-text)',
-            textTransform: 'none',
-            fontSize: '16px',
-            borderBottom: '1px solid var(--color-border)',
-            paddingBottom: '6px',
-            marginBottom: isExpanded ? '4px' : '0',
-            cursor: 'pointer',
-            userSelect: 'none',
-            display: 'flex',
-            alignItems: 'center',
-          }}
         >
           <span
             className="task-list__chevron"
-            style={{
-              display: 'inline-block',
-              marginRight: '6px',
-              fontSize: '12px',
-              transition: 'transform 0.2s ease',
-              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              color: 'var(--color-text-secondary)',
-            }}
+            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
           >
             ▶
           </span>
-          <span style={{ marginRight: '6px' }}>{cat.emoji}</span>
+          <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={16} />
           {cat.label}
-          <span className="task-list__group-count" style={{ background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)', marginLeft: '8px', fontSize: '12px', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-            {catTasks.length}
-          </span>
+          <span className="task-list__group-count">{catTasks.length}</span>
         </h3>
 
         {isExpanded && (
-          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+          <div className="task-list__cards">
             {catTasks.map((task) => (
               <FavoriteTaskCard
                 key={task.id}
@@ -112,26 +92,14 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
       {/* ── Favorites Section ── */}
       {favoriteTasks.length > 0 && (
         <section className="task-list__favorites">
-          <h3
-            className="task-list__group-label"
-            style={{
-              color: 'var(--color-warning, #f0b429)',
-              textTransform: 'none',
-              fontSize: '16px',
-              borderBottom: '2px solid rgba(240, 180, 41, 0.3)',
-              paddingBottom: '6px',
-              marginBottom: '4px',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <span style={{ marginRight: '6px' }}>⭐</span>
+          <h3 className="task-list__group-label" style={{ color: 'var(--color-warning, #f0b429)' }}>
+            <span>⭐</span>
             Favorites
-            <span className="task-list__group-count" style={{ background: 'rgba(240, 180, 41, 0.12)', color: 'var(--color-warning, #f0b429)', marginLeft: '8px', fontSize: '12px', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+            <span className="task-list__group-count" style={{ background: 'rgba(240,180,41,0.12)', color: 'var(--color-warning, #f0b429)' }}>
               {favoriteTasks.length}
             </span>
           </h3>
-          <div className="task-list__cards" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+          <div className="task-list__cards">
             {favoriteTasks.map((task) => {
               const catDetails = getCategoryDetails(task.category || 'other');
               return (

@@ -9,7 +9,7 @@ export default function FeatsWidget({ tasks = [], onOpenGenerator }) {
   const totalAvailable = availableTasks.length;
 
   return (
-    <div className="feats-widget">
+    <div className="feats-widget theme-feats">
       <div className="feats-widget__left">
         <div className="feats-widget__icon-box">
           🎲

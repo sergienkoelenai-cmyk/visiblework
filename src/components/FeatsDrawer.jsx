@@ -52,7 +52,7 @@ export default function FeatsDrawer({
 
   return (
     <div
-      className={`feats-drawer-overlay ${visible ? 'feats-drawer-overlay--visible' : ''}`}
+      className={`feats-drawer-overlay theme-feats ${visible ? 'feats-drawer-overlay--visible' : ''}`}
       onClick={handleClose}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}

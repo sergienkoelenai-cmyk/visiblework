@@ -1,18 +1,18 @@
-/* ── TaskCompletionOverlay (Refactored Sheet UI) ── */
+/* ── TaskCompletionOverlay (Centered Popup Window UI) ── */
 
 .tco {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
   overflow: hidden;
 }
 
@@ -20,28 +20,25 @@
   opacity: 1;
 }
 
-/* ── Card / Bottom Sheet ── */
+/* ── Card / Popup Modal ── */
 .tco__card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 12px)) 20px;
-  max-width: 540px;
-  width: 100vw;
-  max-height: calc(100vh - 20px - env(safe-area-inset-top, 20px));
+  background: var(--color-accent-soft, #ECFEFF);
+  border: none;
+  border-radius: 28px;
+  padding: 18px 18px 20px;
+  max-width: 440px;
+  width: 100%;
+  max-height: calc(100vh - 24px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 16px;
-  box-shadow: var(--shadow-lg);
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 14px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.14);
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tco--visible .tco__card {
@@ -61,9 +58,9 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--color-surface-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.65);
+  border: none;
+  border-radius: 18px;
   width: 100%;
 }
 
@@ -89,9 +86,9 @@
 }
 
 .tco__fav-btn {
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  border-radius: 9999px;
   width: 32px;
   height: 32px;
   font-size: 16px;
@@ -100,19 +97,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  transition: transform 0.2s, background 0.2s;
   color: var(--color-text-secondary);
 }
 
 .tco__fav-btn:hover {
-  border-color: var(--color-border-hover);
-  background: var(--color-surface-hover);
+  background: rgba(255, 255, 255, 0.9);
   transform: scale(1.08);
 }
 
 .tco__fav-btn--active {
-  border-color: rgba(240, 180, 41, 0.4);
-  background: rgba(240, 180, 41, 0.1);
+  background: rgba(240, 180, 41, 0.18);
 }
 
 .tco__task-price {
@@ -144,11 +139,10 @@
 }
 
 .tco__section-title {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0;
 }
 
 .tco__section-header-row {
@@ -167,10 +161,10 @@
 
 .tco__multiplier-btn {
   flex: 1;
-  padding: 8px 4px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-hover);
+  padding: 10px 4px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.55);
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
@@ -181,33 +175,82 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-height: 44px;
+  min-height: 48px;
   justify-content: center;
 }
 
 .tco__multiplier-btn--active {
   background: var(--color-accent);
   color: #fff;
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-glow-accent);
+  box-shadow: 0 4px 14px var(--color-accent-glow);
+}
+
+.tco__multiplier-btn--half.tco__multiplier-btn--active {
+  background: #3b82f6;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 
 .tco__multiplier-btn--bonus.tco__multiplier-btn--active {
   background: #f59e0b;
-  border-color: #f59e0b;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
 
-.tco__multiplier-btn--double.tco__multiplier-btn--active {
+.tco__multiplier-btn--custom.tco__multiplier-btn--active {
   background: #8b5cf6;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
 }
 
 .tco__multiplier-reward {
   font-size: 10px;
   font-weight: 600;
   opacity: 0.85;
+}
+
+/* ── Custom Multiplier Input Box ── */
+.tco__custom-multiplier-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  width: 100%;
+}
+
+.tco__custom-multiplier-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.tco__custom-multiplier-input-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 4px 10px;
+}
+
+.tco__custom-multiplier-prefix {
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.tco__custom-multiplier-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text);
+  outline: none;
 }
 
 /* ── Date Segmented Row ── */
@@ -219,10 +262,10 @@
 
 .tco__date-btn {
   flex: 1;
-  padding: 8px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
+  padding: 9px 6px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.55);
   color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
@@ -237,10 +280,10 @@
 }
 
 .tco__date-btn--active {
-  background: var(--color-surface-active);
-  color: var(--color-text);
-  border-color: var(--color-border-hover);
+  background: var(--color-accent);
+  color: #fff;
   font-weight: 700;
+  box-shadow: 0 4px 12px var(--color-accent-glow);
 }
 
 .tco__custom-date-box {
@@ -252,6 +295,8 @@
   width: 100%;
   padding: 8px 12px;
   min-height: 38px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
 }
 
 /* ── Split Chip ── */
@@ -273,7 +318,7 @@
   cursor: pointer;
 }
 
-/* ── Single Horizontal Scroll / Flex Row of Compact Avatars ── */
+/* ── Avatars Row ── */
 .tco__avatars-row {
   display: flex;
   gap: 16px;
@@ -302,9 +347,9 @@
 
 .tco__cancel {
   padding: 10px 24px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.6);
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
@@ -315,7 +360,7 @@
 }
 
 .tco__cancel:hover {
-  background: var(--color-surface-hover);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--color-text);
 }
 
@@ -323,7 +368,7 @@
   padding: 10px 24px;
   font-size: 13px;
   font-weight: 700;
-  border-radius: var(--radius-full);
+  border-radius: 9999px;
   min-height: 40px;
   display: flex;
   align-items: center;
@@ -332,6 +377,13 @@
   color: white;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 14px var(--color-accent-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tco__confirm-split:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--color-accent-glow);
 }
 
 /* ── Success Animation State ── */

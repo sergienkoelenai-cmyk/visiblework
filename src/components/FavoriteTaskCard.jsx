@@ -1,5 +1,6 @@
 import React from 'react';
 import { getTaskBaseCost } from '../data/pricing';
+import IconBadge from './IconBadge';
 import './FavoriteTaskCard.css';
 
 export function getLastCompletedRelativeText(task) {
@@ -49,10 +50,14 @@ export default function FavoriteTaskCard({
       role="button"
       tabIndex={0}
     >
-      {/* Left Icon */}
-      <div className="favorite-card__icon">
-        {icon}
-      </div>
+      {/* Left Icon — always show user emoji inside styled badge */}
+      <IconBadge
+        emoji={icon}
+        emojiOnly
+        size={34}
+        iconSize={17}
+        className="favorite-card__icon"
+      />
 
       {/* Middle Details */}
       <div className="favorite-card__details">

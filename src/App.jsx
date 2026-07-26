@@ -371,7 +371,7 @@ function App() {
   if (page === 'analytics') {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="app">
+        <div className="app theme-analytics">
           <AnalyticsPage
             users={users}
             completions={analyticsCompletions}
@@ -387,7 +387,7 @@ function App() {
   if (page === 'settings') {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="app">
+        <div className="app theme-settings">
           <SettingsPage
           users={users}
           tasks={tasks}
@@ -443,38 +443,41 @@ function App() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="app">
-      {/* Header */}
-      <header className="app-header">
-        <div className="app-logo">
-          <img src="/favicon.svg" alt="" className="app-logo-icon" />
-          <span className="app-logo-text">VisibleWork</span>
+      <div className="app theme-home">
+      {/* Header Block Container */}
+      <header className="app-header-block">
+        <div className="app-header">
+          <div className="app-logo">
+            <img src="/favicon.svg" alt="" className="app-logo-icon" />
+            <span className="app-logo-text">VisibleWork</span>
+          </div>
+          <div className="app-header-actions">
+            <button
+              className="btn btn-primary app-header-new-btn"
+              onClick={() => { setEditingTask(null); setShowTaskForm(true) }}
+              id="add-task-btn"
+            >
+              <span>+</span> <span className="app-header-btn-text">New Task</span>
+            </button>
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => setPage('analytics')}
+              id="analytics-btn"
+              title="Analytics & History"
+            >
+              📊
+            </button>
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => setPage('settings')}
+              id="settings-btn"
+              title="Settings"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
-        <div className="app-header-actions">
-          <button
-            className="btn btn-primary"
-            onClick={() => { setEditingTask(null); setShowTaskForm(true) }}
-            id="add-task-btn"
-          >
-            <span>+</span> <span className="app-header-btn-text">New Task</span>
-          </button>
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => setPage('analytics')}
-            id="analytics-btn"
-            title="Analytics & History"
-          >
-            📊
-          </button>
-          <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => setPage('settings')}
-            id="settings-btn"
-            title="Settings"
-          >
-            ⚙️
-          </button>
-        </div>
+        <FamilyBar users={users} onUserClick={handleUserClick} />
       </header>
 
       {/* Main Dashboard */}
@@ -487,9 +490,6 @@ function App() {
           complexityMultipliers={settings.complexity_multipliers}
           onCompleteTask={handleCompleteTask}
         />
-
-        {/* Family Members */}
-        <FamilyBar users={users} onUserClick={handleUserClick} />
 
         {/* Feats & Task Generator Widget */}
         <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />

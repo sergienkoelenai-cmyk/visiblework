@@ -1,14 +1,14 @@
 /* ── CriticalFocusBlock ── */
 
 .critical-focus {
-  background: linear-gradient(135deg, rgba(255, 82, 82, 0.12) 0%, rgba(255, 140, 0, 0.08) 100%);
-  border: 1px solid rgba(255, 82, 82, 0.35);
-  border-radius: var(--radius-lg);
-  padding: 16px;
+  background: var(--color-accent-soft, #FEF2F2);
+  border: none;
+  border-radius: 20px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 4px 20px rgba(255, 82, 82, 0.15);
+  gap: 10px;
+  box-shadow: 0 4px 20px var(--color-accent-glow, rgba(239, 68, 68, 0.15));
   position: relative;
   overflow: hidden;
 }
@@ -63,19 +63,19 @@
 }
 
 .critical-focus__card {
-  background: var(--color-surface);
-  border: 1px solid rgba(255, 82, 82, 0.25);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  border: none;
+  border-radius: 14px;
+  padding: 11px 13px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  gap: 7px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .critical-focus__card:hover {
-  border-color: rgba(255, 82, 82, 0.5);
   transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
 .critical-focus__card-top {
@@ -121,11 +121,11 @@
 .critical-focus__badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: var(--radius-full);
+  padding: 3px 9px;
+  border-radius: 9999px;
   background: rgba(255, 152, 0, 0.15);
   color: #ff9800;
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  border: none;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -168,10 +168,10 @@
   font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.65);
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  border: none;
 }
 
 .critical-focus__price {
@@ -182,17 +182,18 @@
 
 .critical-focus__complete-btn {
   padding: 6px 14px;
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   border: none;
-  background: #ff5252;
+  background: var(--color-accent, #EF4444);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
   min-height: 32px;
   flex-shrink: 0;
+  box-shadow: 0 3px 10px var(--color-accent-glow, rgba(239,68,68,0.25));
 }
 
 .critical-focus__complete-btn:hover {

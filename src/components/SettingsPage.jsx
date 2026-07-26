@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import EmojiPicker from 'emoji-picker-react';
 import Avatar from './Avatar';
+import AppEmoji from './AppEmoji';
+import IconBadge, { CategoryIcon } from './IconBadge';
 import { getTaskBaseCost } from '../data/pricing';
 import './SettingsPage.css';
 
 import { rrulestr } from 'rrule';
-
-const COMMON_EMOJIS = ['🧹', '🍽️', '👕', '🛒', '💰', '🔧', '🌱', '🐾', '🧒', '🚗', '📋', '📚', '🛁', '🏠', '💻', '🔋', '🐱', '🐶', '🍕', '🔑'];
 
 function getRecurrenceLabel(task) {
   if (task.type === 'ad-hoc') return 'One-time';
@@ -65,9 +66,12 @@ export default function SettingsPage({
 }) {
   // Category management local state
   const [showAddCat, setShowAddCat] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editingCatLabel, setEditingCatLabel] = useState('');
+  const [editingCatEmoji, setEditingCatEmoji] = useState('📋');
   const [newCatLabel, setNewCatLabel] = useState('');
-  const [newCatEmoji, setNewCatEmoji] = useState(COMMON_EMOJIS[0]);
+  const [newCatEmoji, setNewCatEmoji] = useState('📋');
+  const [showCatEmojiPickerForId, setShowCatEmojiPickerForId] = useState(null); // null | 'new' | catId
   const [catError, setCatError] = useState('');
   const [deletingUser, setDeletingUser] = useState(null);
   const [deletingCategory, setDeletingCategory] = useState(null);
@@ -130,36 +134,52 @@ export default function SettingsPage({
   }, [tasks, categories]);
 
   const handleStartEditCategory = (cat) => {
-    setEditingCategory(cat);
-    setNewCatLabel(cat.label);
-    setNewCatEmoji(cat.emoji);
-    setShowAddCat(true);
-    setCatError('');
-  };
-
-  const handleCancelCategoryEdit = () => {
+    setEditingCatId(cat.id);
+    setEditingCatLabel(cat.label);
+    setEditingCatEmoji(cat.emoji || '📋');
     setShowAddCat(false);
-    setEditingCategory(null);
-    setNewCatLabel('');
-    setNewCatEmoji(COMMON_EMOJIS[0]);
+    setShowCatEmojiPickerForId(null);
     setCatError('');
   };
 
-  const handleSaveCategory = (e) => {
+  const handleCancelInlineCategory = () => {
+    setEditingCatId(null);
+    setEditingCatLabel('');
+    setShowCatEmojiPickerForId(null);
+    setCatError('');
+  };
+
+  const handleSaveInlineCategory = (e) => {
+    e.preventDefault();
+    if (!editingCatLabel.trim()) {
+      setCatError('Label is required');
+      return;
+    }
+    onAddCategory?.({
+      id: editingCatId,
+      label: editingCatLabel.trim(),
+      emoji: editingCatEmoji || '📋',
+    });
+    setEditingCatId(null);
+    setEditingCatLabel('');
+    setShowCatEmojiPickerForId(null);
+    setCatError('');
+  };
+
+  const handleSaveNewCategory = (e) => {
     e.preventDefault();
     if (!newCatLabel.trim()) {
       setCatError('Label is required');
       return;
     }
     onAddCategory?.({
-      id: editingCategory?.id,
       label: newCatLabel.trim(),
-      emoji: newCatEmoji,
+      emoji: newCatEmoji || '📋',
     });
     setNewCatLabel('');
-    setNewCatEmoji(COMMON_EMOJIS[0]);
-    setEditingCategory(null);
+    setNewCatEmoji('📋');
     setShowAddCat(false);
+    setShowCatEmojiPickerForId(null);
     setCatError('');
   };
 
@@ -170,8 +190,14 @@ export default function SettingsPage({
     return (
       <div key={task.id} className="settings__task-item">
         <div className="settings__task-item-details">
-          <span className="settings__task-item-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{emoji}</span>
+          <span className="settings__task-item-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconBadge
+              categoryId={!task.icon ? task.category : undefined}
+              emoji={emoji}
+              emojiOnly={!!task.icon}
+              size={28}
+              iconSize={15}
+            />
             {task.isFavorite && <span style={{ fontSize: '14px' }}>⭐</span>}
             {task.title}
           </span>
@@ -237,7 +263,7 @@ export default function SettingsPage({
                 >
                   <h3 className="settings__category-title" style={{ borderBottom: 'none', paddingBottom: 0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ display: 'inline-block', fontSize: '12px', transition: 'transform 0.2s ease', transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
-                    <span className="settings__category-emoji">{cat.emoji}</span>
+                    <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={18} />
                     {cat.label}
                     <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
                       {totalTasksInCat}
@@ -510,81 +536,183 @@ export default function SettingsPage({
 
         {expandedSections.categories && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {!showAddCat && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <button
-                  className="settings__add-btn"
-                  onClick={() => setShowAddCat(true)}
-                  type="button"
-                  style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
-                >
-                  + Add Category
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                className="settings__add-btn"
+                onClick={() => {
+                  setShowAddCat((prev) => !prev);
+                  setEditingCatId(null);
+                  setNewCatLabel('');
+                  setNewCatEmoji('📋');
+                  setShowCatEmojiPickerForId(null);
+                }}
+                type="button"
+                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
+              >
+                + Add Category
+              </button>
+            </div>
 
-            {showAddCat && (
-              <form className="settings__cat-form" onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Emoji</span>
-                  <select className="task-form__select" value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} style={{ minWidth: '70px', padding: '8px 10px', minHeight: '38px' }}>
-                    {COMMON_EMOJIS.map(em => (
-                      <option key={em} value={em}>{em}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Category Name</span>
+            <div className="settings__categories-grid">
+              {showAddCat && (
+                <form
+                  className="settings__category-item settings__category-item--editing"
+                  onSubmit={handleSaveNewCategory}
+                >
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      className="task-form__icon-btn"
+                      onClick={() => setShowCatEmojiPickerForId(prev => prev === 'new' ? null : 'new')}
+                      title="Choose Category Icon"
+                      style={{ width: '36px', height: '36px' }}
+                    >
+                      <AppEmoji symbol={newCatEmoji || '📋'} size={20} />
+                    </button>
+                    {showCatEmojiPickerForId === 'new' && (
+                      <div className="settings__emoji-popover">
+                        <EmojiPicker
+                          onEmojiClick={(emojiData) => {
+                            setNewCatEmoji(emojiData.emoji);
+                            setShowCatEmojiPickerForId(null);
+                          }}
+                          width={260}
+                          height={300}
+                          lazyLoadEmojis={true}
+                          searchDisabled={true}
+                          skinTonesDisabled={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <input
                     className="task-form__input"
                     type="text"
                     value={newCatLabel}
-                    onChange={(e) => { setNewCatLabel(e.target.value); setCatError(''); }}
-                    placeholder="e.g. Cooking"
-                    style={{ padding: '8px 12px', minHeight: '38px' }}
+                    onChange={(e) => setNewCatLabel(e.target.value)}
+                    placeholder="New Category..."
+                    autoFocus
+                    style={{ flex: 1, minHeight: '36px', padding: '6px 10px', fontSize: '13px' }}
                   />
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="settings__back" onClick={handleCancelCategoryEdit} type="button" style={{ padding: '8px 14px', minHeight: '38px' }}>
-                    Cancel
-                  </button>
-                  <button className="settings__add-btn" type="submit" style={{ padding: '8px 16px', minHeight: '38px' }}>
-                    {editingCategory ? 'Save Changes' : 'Save'}
-                  </button>
-                </div>
-                {catError && <p style={{ color: 'var(--color-danger)', fontSize: '12px', width: '100%', margin: '4px 0 0 0' }}>{catError}</p>}
-              </form>
-            )}
 
-            <div className="settings__categories-grid">
-              {categories.map((cat) => (
-                <div key={cat.id} className="settings__category-item">
-                  <div className="settings__category-label-group">
-                    <span className="settings__category-emoji">{cat.emoji}</span>
-                    <span className="settings__category-label">{cat.label}</span>
+                  <div className="settings__category-actions">
+                    <button
+                      className="settings__category-btn"
+                      type="submit"
+                      title="Save category"
+                      style={{ background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      className="settings__category-btn"
+                      type="button"
+                      onClick={() => { setShowAddCat(false); setShowCatEmojiPickerForId(null); }}
+                      title="Cancel"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  {cat.id !== 'other' && (
-                    <div className="settings__category-actions">
-                      <button
-                        className="settings__category-btn"
-                        onClick={() => handleStartEditCategory(cat)}
-                        title={`Edit ${cat.label}`}
-                        type="button"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="settings__category-btn settings__category-btn--danger"
-                        onClick={() => setDeletingCategory(cat)}
-                        title={`Delete ${cat.label}`}
-                        type="button"
-                      >
-                        🗑️
-                      </button>
+                </form>
+              )}
+
+              {categories.map((cat) => {
+                if (editingCatId === cat.id) {
+                  return (
+                    <form
+                      key={cat.id}
+                      className="settings__category-item settings__category-item--editing"
+                      onSubmit={handleSaveInlineCategory}
+                    >
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          className="task-form__icon-btn"
+                          onClick={() => setShowCatEmojiPickerForId(prev => prev === cat.id ? null : cat.id)}
+                          title="Choose Category Icon"
+                          style={{ width: '36px', height: '36px' }}
+                        >
+                          <AppEmoji symbol={editingCatEmoji || '📋'} size={20} />
+                        </button>
+                        {showCatEmojiPickerForId === cat.id && (
+                          <div className="settings__emoji-popover">
+                            <EmojiPicker
+                              onEmojiClick={(emojiData) => {
+                                setEditingCatEmoji(emojiData.emoji);
+                                setShowCatEmojiPickerForId(null);
+                              }}
+                              width={260}
+                              height={300}
+                              lazyLoadEmojis={true}
+                              searchDisabled={true}
+                              skinTonesDisabled={true}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <input
+                        className="task-form__input"
+                        type="text"
+                        value={editingCatLabel}
+                        onChange={(e) => setEditingCatLabel(e.target.value)}
+                        placeholder="Category Name"
+                        autoFocus
+                        style={{ flex: 1, minHeight: '36px', padding: '6px 10px', fontSize: '13px' }}
+                      />
+
+                      <div className="settings__category-actions">
+                        <button
+                          className="settings__category-btn"
+                          type="submit"
+                          title="Save changes"
+                          style={{ background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          className="settings__category-btn"
+                          type="button"
+                          onClick={handleCancelInlineCategory}
+                          title="Cancel editing"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </form>
+                  );
+                }
+
+                return (
+                  <div key={cat.id} className="settings__category-item">
+                    <div className="settings__category-label-group">
+                      <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={20} />
+                      <span className="settings__category-label">{cat.label}</span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {cat.id !== 'other' && (
+                      <div className="settings__category-actions">
+                        <button
+                          className="settings__category-btn"
+                          onClick={() => handleStartEditCategory(cat)}
+                          title={`Edit ${cat.label}`}
+                          type="button"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="settings__category-btn settings__category-btn--danger"
+                          onClick={() => setDeletingCategory(cat)}
+                          title={`Delete ${cat.label}`}
+                          type="button"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -641,8 +769,8 @@ export default function SettingsPage({
               ⚠️ Delete Category?
             </h3>
             
-            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0 }}>
-              Are you sure you want to delete the <span style={{ fontSize: '18px', marginRight: '4px' }}>{deletingCategory.emoji}</span> <strong style={{ color: 'var(--color-text)' }}>{deletingCategory.label}</strong> category?
+            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Are you sure you want to delete the <CategoryIcon categoryId={deletingCategory.id} emoji={deletingCategory.emoji} size={20} /> <strong style={{ color: 'var(--color-text)' }}>{deletingCategory.label}</strong> category?
             </p>
 
             <div style={{ background: 'rgba(108, 92, 231, 0.05)', border: '1px solid rgba(108, 92, 231, 0.15)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
@@ -676,7 +804,7 @@ export default function SettingsPage({
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v2.5.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.5.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

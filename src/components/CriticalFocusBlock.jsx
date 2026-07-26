@@ -1,5 +1,6 @@
 import React from 'react';
 import { getTaskBaseCost, getTaskDurationMinutes } from '../data/pricing';
+import IconBadge from './IconBadge';
 import './CriticalFocusBlock.css';
 
 export default function CriticalFocusBlock({
@@ -39,7 +40,7 @@ export default function CriticalFocusBlock({
   };
 
   return (
-    <section className="critical-focus">
+    <section className="critical-focus theme-critical">
       <div className="critical-focus__header">
         <h2 className="critical-focus__title">
           <span className="critical-focus__pulse">🚨</span> Critical Focus ({tasks.length})
@@ -58,7 +59,12 @@ export default function CriticalFocusBlock({
             <div key={task.id} className="critical-focus__card">
               <div className="critical-focus__card-top">
                 <div className="critical-focus__task-meta">
-                  <span className="critical-focus__emoji">{cat.emoji}</span>
+                  <IconBadge
+                    categoryId={task.category}
+                    emoji={task.icon || cat.emoji}
+                    size={36}
+                    iconSize={18}
+                  />
                   <div className="critical-focus__task-title-group">
                     <h3 className="critical-focus__task-title">{task.title}</h3>
                     <span className="critical-focus__cat-label">{cat.label}</span>

@@ -13,6 +13,7 @@
   "dependencies": {
     "emoji-picker-react": "^4.19.1",
     "firebase": "^12.15.0",
+    "lucide-react": "^1.26.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "rrule": "^2.8.1",

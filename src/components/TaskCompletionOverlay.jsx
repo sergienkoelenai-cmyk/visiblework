@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from './Avatar';
+import IconBadge from './IconBadge';
 import {
   getTaskBaseCost,
   calculateFinalReward,
 } from '../data/pricing';
 import './TaskCompletionOverlay.css';
-
-const MULTIPLIER_META = [
-  { value: 1.0,  variant: 'normal', label: '1×',   desc: 'Normal' },
-  { value: 1.5,  variant: 'bonus',  label: '1.5×',  desc: '+50% bonus' },
-  { value: 2.0,  variant: 'double', label: '2×',    desc: 'Double!' },
-];
 
 export default function TaskCompletionOverlay({
   task,
@@ -24,7 +19,8 @@ export default function TaskCompletionOverlay({
   const [confirmed, setConfirmed] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [multiplier, setMultiplier] = useState(1.0);
+  const [selectedModifierOption, setSelectedModifierOption] = useState(null); // null (none = 1) | 0.5 | 1.5 | 'CUSTOM'
+  const [customMultiplierInput, setCustomMultiplierInput] = useState('1');
   const [dateOption, setDateOption] = useState('TODAY'); // TODAY | YESTERDAY | CUSTOM
   const [customDateInput, setCustomDateInput] = useState(
     new Date().toISOString().slice(0, 10)
@@ -51,10 +47,34 @@ export default function TaskCompletionOverlay({
     return new Date(); // TODAY
   };
 
+  // Compute effective multiplier (if none selected, use 1; custom allows any value including 0)
+  const getEffectiveMultiplier = () => {
+    if (selectedModifierOption === 0.5) return 0.5;
+    if (selectedModifierOption === 1.5) return 1.5;
+    if (selectedModifierOption === 'CUSTOM') {
+      const parsed = parseFloat(customMultiplierInput);
+      if (!isNaN(parsed) && customMultiplierInput.trim() !== '') {
+        return parsed;
+      }
+      return 1.0;
+    }
+    return 1.0;
+  };
+
+  const multiplier = getEffectiveMultiplier();
+
   // Computed reward values
   const finalReward = calculateFinalReward(task, baseRate, multiplier, complexityMultipliers);
   const splitCount = isSplit && selectedUserIds.length > 0 ? selectedUserIds.length : 1;
   const perPersonReward = finalReward / splitCount;
+
+  const handleSelectModifierOption = (optionId) => {
+    if (selectedModifierOption === optionId) {
+      setSelectedModifierOption(null);
+    } else {
+      setSelectedModifierOption(optionId);
+    }
+  };
 
   const handleSelectUser = (user) => {
     const targetDate = getTargetCompletedAt();
@@ -100,7 +120,7 @@ export default function TaskCompletionOverlay({
 
   return (
     <div
-      className={`tco ${visible ? 'tco--visible' : ''}`}
+      className={`tco theme-completion ${visible ? 'tco--visible' : ''}`}
       onClick={handleCancel}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
@@ -113,9 +133,13 @@ export default function TaskCompletionOverlay({
           <>
             {/* Header: Task Info */}
             <div className="tco__task-info">
-              <span className="tco__task-emoji">
-                {task.icon || task.categoryEmoji || '📋'}
-              </span>
+              <IconBadge
+                emoji={task.icon || task.categoryEmoji || '📋'}
+                categoryId={!task.icon ? task.category : undefined}
+                size={38}
+                iconSize={19}
+                className="tco__task-emoji"
+              />
               <div className="tco__task-title-group">
                 <span className="tco__task-title">{task.title}</span>
               </div>
@@ -146,35 +170,70 @@ export default function TaskCompletionOverlay({
               </span>
             </div>
 
-            {/* Section 1: MULTIPLIER */}
+            {/* Section 1: MULTIPLIER / MODIFICATOR */}
             <div className="tco__section">
-              <span className="tco__section-title">MULTIPLIER</span>
+              <span className="tco__section-title">MODIFICATOR</span>
               <div className="tco__multiplier-row">
-                {MULTIPLIER_META.map((m) => {
-                  const reward = calculateFinalReward(
-                    task,
-                    baseRate,
-                    m.value,
-                    complexityMultipliers
-                  );
-                  const active = multiplier === m.value;
-                  return (
-                    <button
-                      key={m.value}
-                      type="button"
-                      className={`tco__multiplier-btn tco__multiplier-btn--${m.variant} ${
-                        active ? 'tco__multiplier-btn--active' : ''
-                      }`}
-                      onClick={() => setMultiplier(m.value)}
-                    >
-                      <span>{m.label}</span>
-                      <span className="tco__multiplier-reward">
-                        €{reward.toFixed(2)}
-                      </span>
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  className={`tco__multiplier-btn tco__multiplier-btn--half ${
+                    selectedModifierOption === 0.5 ? 'tco__multiplier-btn--active' : ''
+                  }`}
+                  onClick={() => handleSelectModifierOption(0.5)}
+                >
+                  <span>0.5×</span>
+                  <span className="tco__multiplier-reward">
+                    €{calculateFinalReward(task, baseRate, 0.5, complexityMultipliers).toFixed(2)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`tco__multiplier-btn tco__multiplier-btn--bonus ${
+                    selectedModifierOption === 1.5 ? 'tco__multiplier-btn--active' : ''
+                  }`}
+                  onClick={() => handleSelectModifierOption(1.5)}
+                >
+                  <span>1.5×</span>
+                  <span className="tco__multiplier-reward">
+                    €{calculateFinalReward(task, baseRate, 1.5, complexityMultipliers).toFixed(2)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`tco__multiplier-btn tco__multiplier-btn--custom ${
+                    selectedModifierOption === 'CUSTOM' ? 'tco__multiplier-btn--active' : ''
+                  }`}
+                  onClick={() => handleSelectModifierOption('CUSTOM')}
+                >
+                  <span>Custom</span>
+                  <span className="tco__multiplier-reward">
+                    {selectedModifierOption === 'CUSTOM'
+                      ? `€${finalReward.toFixed(2)}`
+                      : 'Any value'}
+                  </span>
+                </button>
               </div>
+
+              {selectedModifierOption === 'CUSTOM' && (
+                <div className="tco__custom-multiplier-box">
+                  <span className="tco__custom-multiplier-label">Custom Multiplier:</span>
+                  <div className="tco__custom-multiplier-input-wrapper">
+                    <span className="tco__custom-multiplier-prefix">×</span>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      className="tco__custom-multiplier-input"
+                      value={customMultiplierInput}
+                      onChange={(e) => setCustomMultiplierInput(e.target.value)}
+                      placeholder="e.g. 0, 0.8, 2..."
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Section 2: DATE */}

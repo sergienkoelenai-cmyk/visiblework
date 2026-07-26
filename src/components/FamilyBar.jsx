@@ -1,22 +1,36 @@
 import React from 'react';
-import Avatar from './Avatar';
 import './FamilyBar.css';
 
 export default function FamilyBar({ users = [], onUserClick }) {
+  if (!users.length) return null;
+
+  const getInitials = (name = '') =>
+    name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+
   return (
     <div className="family-bar">
-      <div className="family-bar__track">
-        {users.map((user) => (
-          <Avatar
-            key={user.id}
-            user={user}
-            size="lg"
-            showBalance
-            showName
-            onClick={() => onUserClick?.(user)}
-          />
-        ))}
-      </div>
+      {users.map((user) => (
+        <button
+          key={user.id}
+          className="family-bar__chip"
+          onClick={() => onUserClick?.(user)}
+          type="button"
+        >
+          <div
+            className="family-bar__chip-avatar"
+            style={{ background: user.avatarColor || 'var(--color-accent-bg)' }}
+          >
+            {user.avatar
+              ? <img src={user.avatar} alt={user.name} className="family-bar__chip-img" />
+              : <span className="family-bar__chip-initials">{getInitials(user.name)}</span>
+            }
+          </div>
+          <span className="family-bar__chip-name">{user.name}</span>
+          <span className="family-bar__chip-balance">
+            €{typeof user.balance === 'number' ? user.balance.toFixed(2) : '0.00'}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

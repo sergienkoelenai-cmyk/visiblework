@@ -47,11 +47,9 @@ export const COMPLEXITY_LABELS = {
 };
 
 export const DURATION_PRESETS = [
-  { value: 5,  label: '5m',  emoji: '⚡' },
-  { value: 15, label: '15m', emoji: '⚡' },
-  { value: 30, label: '30m', emoji: '⏱' },
-  { value: 45, label: '45m', emoji: '⏱' },
-  { value: 60, label: '1h',  emoji: '⏳' },
+  { value: 5,  label: '5m'  },
+  { value: 10, label: '10m' },
+  { value: 30, label: '30m' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -128,7 +126,7 @@ export function calculateFinalReward(task, baseRate, multiplier = 1.0, complexit
 // ─── Completion multiplier presets ────────────────────────────────────────────
 
 export const COMPLETION_MULTIPLIERS = [
-  { value: 1.0, label: '1×' },
+  { value: 0.5, label: '0.5×' },
   { value: 1.5, label: '1.5×' },
-  { value: 2.0, label: '2×' },
 ];
+
