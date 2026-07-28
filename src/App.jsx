@@ -40,6 +40,7 @@ import FeatsWidget from './components/FeatsWidget'
 import FeatsDrawer from './components/FeatsDrawer'
 import CriticalFocusBlock from './components/CriticalFocusBlock'
 import OneOffTaskSelectionModal from './components/OneOffTaskSelectionModal'
+import { getTaskAllowInFeats } from './data/feats'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
@@ -211,10 +212,11 @@ function App() {
 
   const criticalTasks = tasksWithStatus.filter(t => t.is_critical && shouldDisplayScheduledTask(t, now));
 
-  const todayTasks = tasksWithStatus.filter(t => shouldDisplayScheduledTask(t, now));
+  const todayTasks = tasksWithStatus.filter(t => !getTaskAllowInFeats(t) && shouldDisplayScheduledTask(t, now));
 
   const upcomingTasks = tasks.filter(t => {
     if (!t.isActive || t.type === 'always-available' || t.type === 'ad-hoc') return false;
+    if (getTaskAllowInFeats(t)) return false;
     if (!t.nextDueDate) return false;
     const due = toJsDate(t.nextDueDate);
     if (!due) return false;
