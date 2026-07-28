@@ -39,6 +39,7 @@ import PullToRefresh from './components/PullToRefresh'
 import FeatsWidget from './components/FeatsWidget'
 import FeatsDrawer from './components/FeatsDrawer'
 import CriticalFocusBlock from './components/CriticalFocusBlock'
+import OneOffTaskSelectionModal from './components/OneOffTaskSelectionModal'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './data/firebase'
@@ -66,10 +67,12 @@ function App() {
   const [completingTask, setCompletingTask] = useState(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
+  const [taskFormMode, setTaskFormMode] = useState('simplified') // 'simplified' | 'full'
   const [cashoutUser_, setCashoutUser] = useState(null)
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [showFeatsDrawer, setShowFeatsDrawer] = useState(false)
+  const [showOneOffSelectionModal, setShowOneOffSelectionModal] = useState(false)
   const [toastMessage, setToastMessage] = useState(null)
 
   // --- Auth subscription ---
@@ -274,6 +277,7 @@ function App() {
 
   const handleEditTask = useCallback((task) => {
     setEditingTask(task)
+    setTaskFormMode('full')
     setShowTaskForm(true)
   }, [])
 
@@ -283,6 +287,7 @@ function App() {
 
   const handleAddTaskInCategory = useCallback((categoryId) => {
     setEditingTask({ category: categoryId })
+    setTaskFormMode('full')
     setShowTaskForm(true)
   }, [])
 
@@ -431,6 +436,7 @@ function App() {
               categories={categories}
               baseRate={settings.base_rate ?? 0.10}
               complexityMultipliers={settings.complexity_multipliers}
+              mode={taskFormMode}
               onSave={handleSaveTask}
               onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
             />
@@ -489,6 +495,7 @@ function App() {
             categories={categories}
             baseRate={settings.base_rate ?? 0.10}
             complexityMultipliers={settings.complexity_multipliers}
+            mode={taskFormMode}
             onSave={handleSaveTask}
             onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
           />
@@ -511,7 +518,7 @@ function App() {
           <div className="app-header-actions">
             <button
               className="btn btn-primary app-header-new-btn"
-              onClick={() => { setEditingTask(null); setShowTaskForm(true) }}
+              onClick={() => { setEditingTask(null); setTaskFormMode('simplified'); setShowTaskForm(true) }}
               id="add-task-btn"
             >
               <span>+</span> <span className="app-header-btn-text">New Task</span>
@@ -549,7 +556,11 @@ function App() {
         />
 
         {/* Feats & Task Generator Widget */}
-        <FeatsWidget tasks={tasks} onOpenGenerator={() => setShowFeatsDrawer(true)} />
+        <FeatsWidget
+          tasks={tasks}
+          onOpenGenerator={() => setShowFeatsDrawer(true)}
+          onOpenSelection={() => setShowOneOffSelectionModal(true)}
+        />
 
         <section className="dashboard-section">
           <TaskList tasks={todayTasks} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
@@ -594,6 +605,7 @@ function App() {
           categories={categories}
           baseRate={settings.base_rate ?? 0.10}
           complexityMultipliers={settings.complexity_multipliers}
+          mode={taskFormMode}
           onSave={handleSaveTask}
           onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
         />
@@ -626,6 +638,20 @@ function App() {
             handleCompleteTask(drawnTask)
           }}
           onClose={() => setShowFeatsDrawer(false)}
+        />
+      )}
+
+      {showOneOffSelectionModal && (
+        <OneOffTaskSelectionModal
+          tasks={tasks}
+          categories={categories}
+          baseRate={settings.base_rate ?? 0.10}
+          complexityMultipliers={settings.complexity_multipliers}
+          onSelectTask={(selectedTask) => {
+            setShowOneOffSelectionModal(false)
+            handleCompleteTask(selectedTask)
+          }}
+          onClose={() => setShowOneOffSelectionModal(false)}
         />
       )}
     </div>

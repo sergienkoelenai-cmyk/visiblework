@@ -26,6 +26,7 @@ export default function TaskForm({
   categories = [],
   baseRate = 0.10,
   complexityMultipliers = null,
+  mode = 'simplified',
   onSave,
   onCancel,
 }) {
@@ -51,6 +52,7 @@ export default function TaskForm({
 
   // Progressive Disclosure: Schedule state
   const [showScheduleEditor, setShowScheduleEditor] = useState(false);
+  const [makeRecurring, setMakeRecurring] = useState(mode === 'full');
 
   // Recurrence States
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
@@ -114,12 +116,25 @@ export default function TaskForm({
       setFromLastCompletion(parsed.fromLastCompletion);
       setIsCritical(!!task.is_critical);
 
-      if (parsed.repeatFrequency !== 'none' || parsed.startDate !== new Date().toISOString().slice(0, 10)) {
+      const isRecurring = parsed.repeatFrequency !== 'none' && task.type !== 'ad-hoc';
+      setMakeRecurring(isRecurring);
+      if (isRecurring || parsed.startDate !== new Date().toISOString().slice(0, 10)) {
         setShowScheduleEditor(true);
+      }
+    } else {
+      if (mode === 'simplified') {
+        const hasOneOff = categories.some(c => c.id === 'one-off');
+        setCategory(hasOneOff ? 'one-off' : (categories[0]?.id || ''));
+        setMakeRecurring(false);
+        setRepeatFrequency('none');
+        setShowScheduleEditor(false);
+      } else {
+        setCategory(categories[0]?.id || '');
+        setMakeRecurring(true);
       }
     }
     requestAnimationFrame(() => setVisible(true));
-  }, [task]);
+  }, [task, mode, categories]);
 
   const toggleWeeklyDay = (dayKey) => {
     if (weeklyDays.includes(dayKey)) {
@@ -140,11 +155,14 @@ export default function TaskForm({
     e.preventDefault();
     if (!validate()) return;
 
+    const isOneOff = (mode === 'simplified' && !makeRecurring) || repeatFrequency === 'none';
     let computedType = 'ad-hoc';
-    if (repeatFrequency === 'always') {
-      computedType = 'always-available';
-    } else if (repeatFrequency !== 'none') {
-      computedType = 'recurring';
+    if (!isOneOff) {
+      if (repeatFrequency === 'always') {
+        computedType = 'always-available';
+      } else {
+        computedType = 'recurring';
+      }
     }
 
     let recurrence = null;
@@ -163,7 +181,7 @@ export default function TaskForm({
           endDateType,
           endDateValue,
           endCountValue,
-          repeatFrequency,
+          repeatFrequency: repeatFrequency === 'none' ? 'daily' : repeatFrequency,
           weeklyDays,
           monthlyStrategy,
           monthlyDayOfMonth,
@@ -219,7 +237,7 @@ export default function TaskForm({
             endDateType,
             endDateValue,
             endCountValue,
-            repeatFrequency,
+            repeatFrequency: repeatFrequency === 'none' ? 'daily' : repeatFrequency,
             weeklyDays,
             monthlyStrategy,
             monthlyDayOfMonth,
@@ -250,7 +268,7 @@ export default function TaskForm({
     const data = {
       title: title.trim(),
       description: description.trim(),
-      category,
+      category: category || (isOneOff ? 'one-off' : ''),
       complexity,
       duration_minutes: durationMinutes,
       custom_cost: customCost,
@@ -260,6 +278,7 @@ export default function TaskForm({
         complexityMultipliers
       ),
       type: computedType,
+      is_one_off: isOneOff,
       icon: icon || null,
       isActive: true,
       is_critical: isCritical,
@@ -582,107 +601,142 @@ export default function TaskForm({
 
         {/* 5. Schedule & Critical Priority (Progressive Disclosure) */}
         <div className="task-form__section">
-          {/* Schedule Compact Summary Row */}
-          <div className="task-form__summary-row">
-            <span className="task-form__summary-text">
-              📅 {scheduleSummaryText}
-            </span>
-            <button
-              type="button"
-              className="task-form__edit-summary-btn"
-              onClick={() => setShowScheduleEditor((prev) => !prev)}
-            >
-              {showScheduleEditor ? 'Done' : 'Edit'}
-            </button>
-          </div>
+          {mode === 'simplified' && (
+            <div className="task-form__critical-inline-row" style={{ marginBottom: makeRecurring ? '6px' : '0' }}>
+              <div className="task-form__critical-text-group">
+                <span className="task-form__critical-title">
+                  🔄 Make recurring
+                </span>
+                <span className="task-form__critical-subtitle">
+                  Turn this quest into a routine schedule
+                </span>
+              </div>
+              <label className="task-form__switch">
+                <input
+                  type="checkbox"
+                  checked={makeRecurring}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setMakeRecurring(checked);
+                    if (checked) {
+                      if (repeatFrequency === 'none') setRepeatFrequency('daily');
+                      setShowScheduleEditor(true);
+                    } else {
+                      setRepeatFrequency('none');
+                      setShowScheduleEditor(false);
+                    }
+                  }}
+                />
+                <span className="task-form__switch-slider" />
+              </label>
+            </div>
+          )}
 
-          {/* Collapsible Schedule Editor */}
-          {showScheduleEditor && (
-            <div className="task-form__schedule-editor">
-              <div className="task-form__row">
-                <label className="task-form__label">
-                  Start date
-                  <input
-                    type="date"
-                    className="task-form__input"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </label>
-
-                <label className="task-form__label">
-                  Repeat
-                  <select
-                    className="task-form__select"
-                    value={repeatFrequency}
-                    onChange={(e) => setRepeatFrequency(e.target.value)}
-                  >
-                    <option value="none">Does not repeat</option>
-                    <option value="always">Always available</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="custom">Custom interval</option>
-                  </select>
-                </label>
+          {(mode === 'full' || makeRecurring) && (
+            <>
+              {/* Schedule Compact Summary Row */}
+              <div className="task-form__summary-row">
+                <span className="task-form__summary-text">
+                  📅 {scheduleSummaryText}
+                </span>
+                <button
+                  type="button"
+                  className="task-form__edit-summary-btn"
+                  onClick={() => setShowScheduleEditor((prev) => !prev)}
+                >
+                  {showScheduleEditor ? 'Done' : 'Edit'}
+                </button>
               </div>
 
-              {repeatFrequency === 'weekly' && (
-                <div className="task-form__weekly-group">
-                  {WEEKDAYS.map((d) => (
-                    <button
-                      key={d.key}
-                      type="button"
-                      className={`task-form__weekday-pill ${
-                        weeklyDays.includes(d.key)
-                          ? 'task-form__weekday-pill--active'
-                          : ''
-                      }`}
-                      onClick={() => toggleWeeklyDay(d.key)}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {repeatFrequency === 'custom' && (
-                <div className="task-form__custom-interval-box">
+              {/* Collapsible Schedule Editor */}
+              {showScheduleEditor && (
+                <div className="task-form__schedule-editor">
                   <div className="task-form__row">
                     <label className="task-form__label">
-                      Every
+                      Start date
                       <input
-                        type="number"
-                        min="1"
+                        type="date"
                         className="task-form__input"
-                        value={customInterval}
-                        onChange={(e) => setCustomInterval(e.target.value)}
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
                       />
                     </label>
+
                     <label className="task-form__label">
-                      Unit
+                      Repeat
                       <select
                         className="task-form__select"
-                        value={customUnit}
-                        onChange={(e) => setCustomUnit(e.target.value)}
+                        value={repeatFrequency}
+                        onChange={(e) => setRepeatFrequency(e.target.value)}
                       >
-                        <option value="days">Days</option>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
+                        <option value="none">Does not repeat</option>
+                        <option value="always">Always available</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="custom">Custom interval</option>
                       </select>
                     </label>
                   </div>
-                  <label className="task-form__checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={fromLastCompletion}
-                      onChange={(e) => setFromLastCompletion(e.target.checked)}
-                    />
-                    <span>Schedule from completion date</span>
-                  </label>
+
+                  {repeatFrequency === 'weekly' && (
+                    <div className="task-form__weekly-group">
+                      {WEEKDAYS.map((d) => (
+                        <button
+                          key={d.key}
+                          type="button"
+                          className={`task-form__weekday-pill ${
+                            weeklyDays.includes(d.key)
+                              ? 'task-form__weekday-pill--active'
+                              : ''
+                          }`}
+                          onClick={() => toggleWeeklyDay(d.key)}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {repeatFrequency === 'custom' && (
+                    <div className="task-form__custom-interval-box">
+                      <div className="task-form__row">
+                        <label className="task-form__label">
+                          Every
+                          <input
+                            type="number"
+                            min="1"
+                            className="task-form__input"
+                            value={customInterval}
+                            onChange={(e) => setCustomInterval(e.target.value)}
+                          />
+                        </label>
+                        <label className="task-form__label">
+                          Unit
+                          <select
+                            className="task-form__select"
+                            value={customUnit}
+                            onChange={(e) => setCustomUnit(e.target.value)}
+                          >
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                          </select>
+                        </label>
+                      </div>
+                      <label className="task-form__checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={fromLastCompletion}
+                          onChange={(e) => setFromLastCompletion(e.target.checked)}
+                        />
+                        <span>Schedule from completion date</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {/* Compact Inline Critical Priority Row */}

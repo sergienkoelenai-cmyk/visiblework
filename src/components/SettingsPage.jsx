@@ -117,6 +117,10 @@ export default function SettingsPage({
     });
 
     tasks.forEach((task) => {
+      // Ephemeral lifecycle: Completed one-off tasks (isActive === false) are archived/removed from Task Manager
+      const isOneOff = task.is_one_off === true || task.type === 'ad-hoc' || (!task.recurrence && task.type !== 'always-available');
+      if (isOneOff && task.isActive === false) return;
+
       const catId = task.category || 'other';
       if (!groups[catId]) {
         groups[catId] = { adHoc: [], recurring: [], alwaysAvailable: [] };

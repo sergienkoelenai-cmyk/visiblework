@@ -5,6 +5,7 @@
  * energy/time candidate filtering, and recency-weighted task generation.
  */
 
+import { rrulestr } from 'rrule';
 import { getTaskDurationMinutes } from './pricing.js';
 import { getTaskStatus } from './scheduler.js';
 
@@ -39,6 +40,79 @@ export function isTaskCurrentlyAvailable(task) {
   }
 
   return status === 'overdue' || status === 'due_today';
+}
+
+/**
+ * Calculate repeat frequency interval in calendar days for recurring tasks.
+ * @param {Object} task
+ * @returns {number}
+ */
+export function getRecurrenceIntervalDays(task) {
+  if (!task || !task.recurrence) return 0;
+  const rec = task.recurrence;
+
+  if (typeof rec === 'object' && rec.mode === 'interval_from_completion') {
+    const val = Number(rec.intervalValue || rec.intervalDays || 1);
+    const unit = rec.intervalUnit || 'days';
+    if (unit === 'weeks') return val * 7;
+    if (unit === 'months') return val * 30;
+    return val;
+  }
+
+  const rruleString = typeof rec === 'string' ? rec : (rec.rrule || null);
+  if (rruleString) {
+    try {
+      const rule = rrulestr(rruleString);
+      const options = rule.origOptions || {};
+      const interval = options.interval || 1;
+      const freq = options.freq;
+      if (freq === 1 || String(freq) === '1') return interval * 30;
+      if (freq === 0 || String(freq) === '0') return interval * 365;
+      if (freq === 2 || String(freq) === '2') return interval * 7;
+      if (freq === 3 || String(freq) === '3') return interval;
+    } catch (e) {
+      const str = String(rruleString).toUpperCase();
+      if (str.includes('FREQ=MONTHLY') || str.includes('FREQ=YEARLY')) return 30;
+      if (str.includes('FREQ=WEEKLY')) {
+        const match = str.match(/INTERVAL=(\d+)/);
+        const interval = match ? parseInt(match[1], 10) : 1;
+        return interval * 7;
+      }
+      if (str.includes('FREQ=DAILY')) {
+        const match = str.match(/INTERVAL=(\d+)/);
+        return match ? parseInt(match[1], 10) : 1;
+      }
+    }
+  }
+  return 0;
+}
+
+/**
+ * Strict pool eligibility check for Draw a Task randomizer:
+ * Eligible IF AND ONLY IF:
+ * - is_one_off === true (All active single-instance tasks)
+ *   OR
+ * - Task is recurring AND active AND due today/overdue AND repeat interval >= 14 days.
+ * Excludes daily or weekly (<14d) recurring tasks.
+ *
+ * @param {Object} task
+ * @returns {boolean}
+ */
+export function isEligibleForDraw(task) {
+  if (!task || task.isActive === false) return false;
+
+  const isOneOff = task.is_one_off === true || task.type === 'ad-hoc' || (!task.recurrence && task.type !== 'always-available');
+
+  if (isOneOff) {
+    return true;
+  }
+
+  if (task.type === 'recurring') {
+    if (!isTaskCurrentlyAvailable(task)) return false;
+    return getRecurrenceIntervalDays(task) >= 14;
+  }
+
+  return false;
 }
 
 /**
@@ -88,8 +162,8 @@ export function isTimeCompatible(durationMinutes, userTimeWindow = 'LONG') {
  */
 export function getEligibleTasks(allTasks = [], energy = 'HIGH', time = 'LONG') {
   return allTasks.filter((task) => {
-    // 1. Strict availability check
-    if (!isTaskCurrentlyAvailable(task)) return false;
+    // 1. Strict pool eligibility (one-off or recurring >= 14 days)
+    if (!isEligibleForDraw(task)) return false;
 
     // 2. Capacity matching
     const complexity = task.complexity || 'LOW';

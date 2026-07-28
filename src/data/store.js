@@ -174,6 +174,10 @@ export async function getActiveTasks() {
  * @returns {Promise<string>} The new document ID.
  */
 export async function addTask(data) {
+  const isOneOff = data.is_one_off !== undefined 
+    ? !!data.is_one_off 
+    : (data.type === 'ad-hoc' || (!data.recurrence && data.type !== 'always-available'));
+
   const taskData = {
     title: data.title || '',
     description: data.description || '',
@@ -182,8 +186,9 @@ export async function addTask(data) {
     duration_minutes: data.duration_minutes || null,
     estimated_time: data.estimated_time || null,
     custom_cost: data.custom_cost !== undefined ? data.custom_cost : null,
-    category: data.category || '',
-    type: data.type || 'ad-hoc',
+    category: data.category || (isOneOff ? 'one-off' : ''),
+    type: data.type || (isOneOff ? 'ad-hoc' : 'recurring'),
+    is_one_off: isOneOff,
     recurrence: data.recurrence || null,
     isActive: data.isActive !== undefined ? data.isActive : true,
     is_critical: data.is_critical !== undefined ? !!data.is_critical : false,
@@ -607,6 +612,7 @@ export async function getCategories() {
 }
 async function seedCategories() {
   const defaults = [
+    { id: 'one-off', label: 'One-Off Tasks', emoji: '🎯', createdAt: new Date() },
     { id: 'cleaning', label: 'Cleaning', emoji: '🧹', createdAt: new Date() },
     { id: 'kitchen', label: 'Kitchen', emoji: '🍽️', createdAt: new Date() },
     { id: 'laundry', label: 'Laundry', emoji: '👕', createdAt: new Date() },
@@ -645,6 +651,7 @@ export function subscribeToCategories(callback) {
       console.error("Error subscribing to categories (check your Firestore rules):", err);
       // Graceful fallback to default categories to prevent blank screen crash
       const defaults = [
+        { id: 'one-off', label: 'One-Off Tasks', emoji: '🎯' },
         { id: 'cleaning', label: 'Cleaning', emoji: '🧹' },
         { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
         { id: 'laundry', label: 'Laundry', emoji: '👕' },

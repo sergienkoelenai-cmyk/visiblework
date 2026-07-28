@@ -1,12 +1,17 @@
 import React from 'react';
-import { isFeat, isTaskCurrentlyAvailable } from '../data/feats.js';
+import { isFeat, isEligibleForDraw } from '../data/feats.js';
 import './FeatsWidget.css';
 
-export default function FeatsWidget({ tasks = [], onOpenGenerator }) {
-  // Count currently available feats & tasks
-  const availableTasks = tasks.filter(isTaskCurrentlyAvailable);
-  const featCount = availableTasks.filter(isFeat).length;
-  const totalAvailable = availableTasks.length;
+export default function FeatsWidget({ tasks = [], onOpenGenerator, onOpenSelection }) {
+  // Count eligible tasks for generator and active one-off tasks for selection showcase
+  const eligibleTasks = tasks.filter(isEligibleForDraw);
+  const activeOneOffTasks = tasks.filter((t) => {
+    if (t.isActive === false) return false;
+    return t.is_one_off === true || t.type === 'ad-hoc' || (!t.recurrence && t.type !== 'always-available');
+  });
+
+  const featCount = eligibleTasks.filter(isFeat).length;
+  const totalEligible = eligibleTasks.length;
 
   return (
     <div className="feats-widget theme-feats">
@@ -20,21 +25,32 @@ export default function FeatsWidget({ tasks = [], onOpenGenerator }) {
           </h3>
           <p className="feats-widget__subtitle">
             {featCount > 0
-              ? `🔥 ${featCount} Feat${featCount > 1 ? 's' : ''} available today!`
-              : totalAvailable > 0
-                ? `${totalAvailable} task${totalAvailable > 1 ? 's' : ''} available to draw`
-                : 'No tasks due right now'}
+              ? `🔥 ${featCount} Feat${featCount > 1 ? 's' : ''} & ${activeOneOffTasks.length} Quest${activeOneOffTasks.length !== 1 ? 's' : ''} available!`
+              : totalEligible > 0
+                ? `${totalEligible} task${totalEligible > 1 ? 's' : ''} available to draw`
+                : 'No active feats due right now'}
           </p>
         </div>
       </div>
 
-      <button
-        type="button"
-        className="feats-widget__btn"
-        onClick={onOpenGenerator}
-      >
-        <span>Draw a Task</span> 🎲
-      </button>
+      <div className="feats-widget__btn-group">
+        <button
+          type="button"
+          className="feats-widget__btn feats-widget__btn--draw"
+          onClick={onOpenGenerator}
+        >
+          <span>Draw Task</span> 🎲
+        </button>
+
+        <button
+          type="button"
+          className="feats-widget__btn feats-widget__btn--choose"
+          onClick={onOpenSelection}
+        >
+          <span>Choose Feat</span> 🎯
+        </button>
+      </div>
     </div>
   );
 }
+
