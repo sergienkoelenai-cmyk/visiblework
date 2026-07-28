@@ -235,6 +235,7 @@ export function calculateNextDueDate(task, completionDate) {
  * @returns {'overdue'|'due_today'|'upcoming'|'completed'}
  */
 export function getTaskStatus(task) {
+  if (!task) return 'completed';
   if (task.type === 'always-available') {
     return 'due_today';
   }
@@ -251,20 +252,16 @@ export function getTaskStatus(task) {
   }
 
   const today = startOfDay(new Date());
-  const dueDate = startOfDay(
-    task.nextDueDate instanceof Date
-      ? task.nextDueDate
-      : task.nextDueDate.toDate
-        ? task.nextDueDate.toDate()
-        : new Date(task.nextDueDate)
-  );
+  const dueDate = toJsDate(task.nextDueDate);
 
-  if (isNaN(dueDate.getTime())) {
+  if (!dueDate || isNaN(dueDate.getTime())) {
     return 'upcoming';
   }
 
-  if (dueDate < today) return 'overdue';
-  if (dueDate.getTime() === today.getTime()) return 'due_today';
+  const dueDay = startOfDay(dueDate);
+
+  if (dueDay < today) return 'overdue';
+  if (dueDay.getTime() === today.getTime()) return 'due_today';
   return 'upcoming';
 }
 
@@ -305,15 +302,10 @@ export function sortTasksByUrgency(tasks) {
 export function isScheduledForToday(task, currentDate = new Date()) {
   if (!task) return false;
   if (task.type === 'always-available') return true;
-  if (!task.nextDueDate) return false;
+  const due = toJsDate(task.nextDueDate);
+  if (!due) return false;
   const today = startOfDay(currentDate);
-  const dueDay = startOfDay(
-    task.nextDueDate instanceof Date
-      ? task.nextDueDate
-      : task.nextDueDate.toDate
-        ? task.nextDueDate.toDate()
-        : new Date(task.nextDueDate)
-  );
+  const dueDay = startOfDay(due);
   return !isNaN(dueDay.getTime()) && dueDay.getTime() === today.getTime();
 }
 
@@ -322,15 +314,10 @@ export function isScheduledForToday(task, currentDate = new Date()) {
  */
 export function isTaskOverdue(task, currentDate = new Date()) {
   if (!task || task.type === 'always-available' || task.type === 'ad-hoc') return false;
-  if (!task.nextDueDate) return false;
+  const due = toJsDate(task.nextDueDate);
+  if (!due) return false;
   const today = startOfDay(currentDate);
-  const dueDay = startOfDay(
-    task.nextDueDate instanceof Date
-      ? task.nextDueDate
-      : task.nextDueDate.toDate
-        ? task.nextDueDate.toDate()
-        : new Date(task.nextDueDate)
-  );
+  const dueDay = startOfDay(due);
   return !isNaN(dueDay.getTime()) && dueDay < today;
 }
 
@@ -382,13 +369,8 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
  * Format a readable label for a next due date (e.g., "Today", "Tomorrow", "Wed, Aug 5").
  */
 export function formatNextDueDateLabel(nextDueDate) {
-  if (!nextDueDate) return 'soon';
-  const due = nextDueDate instanceof Date
-    ? nextDueDate
-    : nextDueDate.toDate
-      ? nextDueDate.toDate()
-      : new Date(nextDueDate);
-  if (isNaN(due.getTime())) return 'soon';
+  const due = toJsDate(nextDueDate);
+  if (!due || isNaN(due.getTime())) return 'soon';
 
   const today = startOfDay(new Date());
   const dueDay = startOfDay(due);

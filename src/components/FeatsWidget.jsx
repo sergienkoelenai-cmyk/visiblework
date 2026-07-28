@@ -5,7 +5,6 @@ import './FeatsWidget.css';
 export default function FeatsWidget({ tasks = [], onOpenGenerator, onOpenSelection }) {
   // Count eligible tasks for generator and selection showcase (all tasks in Feat pool)
   const eligibleTasks = tasks.filter(isEligibleForDraw);
-  const featCount = eligibleTasks.filter(isFeat).length;
   const totalEligible = eligibleTasks.length;
 
   return (

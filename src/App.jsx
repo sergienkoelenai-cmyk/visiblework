@@ -110,8 +110,11 @@ function App() {
   }, [currentUser])
 
   // --- Database Auto-Fixer for existing tasks with stale due dates ---
+  const hasRanAutoFix = useRef(false);
+
   useEffect(() => {
-    if (!currentUser || tasks.length === 0) return;
+    if (!currentUser || tasks.length === 0 || hasRanAutoFix.current) return;
+    hasRanAutoFix.current = true;
 
     let isMounted = true;
 
@@ -130,8 +133,8 @@ function App() {
 
         if (!isMounted) return;
 
-        tasks.forEach(async (task) => {
-          if (!task || task.isActive === false) return;
+        for (const task of tasks) {
+          if (!task || task.isActive === false) continue;
           if (task.recurrence || task.type === 'recurring') {
             const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
             const currentDue = toJsDate(task.nextDueDate);
@@ -169,7 +172,7 @@ function App() {
               }
             }
           }
-        });
+        }
       } catch (err) {
         console.error('[Auto-Fix] Error running completion auto-fixer:', err);
       }
@@ -213,7 +216,8 @@ function App() {
   const upcomingTasks = tasks.filter(t => {
     if (!t.isActive || t.type === 'always-available' || t.type === 'ad-hoc') return false;
     if (!t.nextDueDate) return false;
-    const due = t.nextDueDate.toDate ? t.nextDueDate.toDate() : new Date(t.nextDueDate);
+    const due = toJsDate(t.nextDueDate);
+    if (!due) return false;
     const endOfToday = new Date(now.getTime() + 24*60*60*1000);
     return due >= endOfToday && due <= threeDaysFromNow;
   });
