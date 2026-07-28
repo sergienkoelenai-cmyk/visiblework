@@ -30,7 +30,20 @@ function getRecurrenceLabel(task) {
   return 'Recurring task';
 }
 
-function getLastCompletedText(task) {
+export function getDoerName(task, users = []) {
+  if (!task || !task.lastCompletedBy) return '';
+  const raw = String(task.lastCompletedBy);
+  const idsOrNames = raw.split(',').map(s => s.trim()).filter(Boolean);
+
+  const resolvedNames = idsOrNames.map(idOrName => {
+    const user = (users || []).find(u => u.id === idOrName);
+    return user ? user.name : idOrName;
+  });
+
+  return resolvedNames.join(', ');
+}
+
+function getLastCompletedText(task, users = []) {
   if (!task.lastCompletedAt) {
     return 'Never completed yet';
   }
@@ -46,16 +59,19 @@ function getLastCompletedText(task) {
     
     const diffMs = today.getTime() - complDate.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const doer = getDoerName(task, users);
+    const bySuffix = doer ? ` by ${doer}` : '';
     
-    if (diffDays === 0) return 'Last completed: Today';
-    if (diffDays === 1) return 'Last completed: Yesterday';
-    return `Last completed: ${diffDays} days ago`;
+    if (diffDays === 0) return `Last completed: Today${bySuffix}`;
+    if (diffDays === 1) return `Last completed: Yesterday${bySuffix}`;
+    return `Last completed: ${diffDays} days ago${bySuffix}`;
   } catch (e) {
     return '';
   }
 }
 
-export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers = null, onComplete, statusLabel }) {
+export default function TaskCard({ task, users = [], baseRate = 0.10, complexityMultipliers = null, onComplete, statusLabel }) {
   const status = statusLabel || 'upcoming';
 
   const classes = [
@@ -76,7 +92,7 @@ export default function TaskCard({ task, baseRate = 0.10, complexityMultipliers 
           <div className="task-card__meta">
             <span className="task-card__recurrence-text">{getRecurrenceLabel(task)}</span>
             {task.lastCompletedAt && (
-              <span className="task-card__last-completed">{getLastCompletedText(task)}</span>
+              <span className="task-card__last-completed">{getLastCompletedText(task, users)}</span>
             )}
           </div>
         </div>

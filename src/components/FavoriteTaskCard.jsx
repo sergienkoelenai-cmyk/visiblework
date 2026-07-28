@@ -3,7 +3,20 @@ import { getTaskBaseCost } from '../data/pricing';
 import IconBadge from './IconBadge';
 import './FavoriteTaskCard.css';
 
-export function getLastCompletedRelativeText(task) {
+export function getDoerName(task, users = []) {
+  if (!task || !task.lastCompletedBy) return '';
+  const raw = String(task.lastCompletedBy);
+  const idsOrNames = raw.split(',').map(s => s.trim()).filter(Boolean);
+
+  const resolvedNames = idsOrNames.map(idOrName => {
+    const user = (users || []).find(u => u.id === idOrName);
+    return user ? user.name : idOrName;
+  });
+
+  return resolvedNames.join(', ');
+}
+
+export function getLastCompletedRelativeText(task, users = []) {
   if (!task.lastCompletedAt) {
     return 'Never';
   }
@@ -20,9 +33,12 @@ export function getLastCompletedRelativeText(task) {
     const diffMs = today.getTime() - complDate.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays <= 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
+    const doer = getDoerName(task, users);
+    const bySuffix = doer ? ` by ${doer}` : '';
+
+    if (diffDays <= 0) return `Today${bySuffix}`;
+    if (diffDays === 1) return `Yesterday${bySuffix}`;
+    return `${diffDays} days ago${bySuffix}`;
   } catch (e) {
     return 'Never';
   }
@@ -30,13 +46,14 @@ export function getLastCompletedRelativeText(task) {
 
 export default function FavoriteTaskCard({
   task,
+  users = [],
   baseRate = 0.10,
   complexityMultipliers = null,
   onComplete,
 }) {
   const icon = task.icon || task.categoryEmoji || '📋';
   const price = getTaskBaseCost(task, baseRate, complexityMultipliers);
-  const relativeCompleted = getLastCompletedRelativeText(task);
+  const relativeCompleted = getLastCompletedRelativeText(task, users);
 
   const handleClick = (e) => {
     e.stopPropagation();

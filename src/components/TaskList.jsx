@@ -4,7 +4,7 @@ import FavoriteTaskCard from './FavoriteTaskCard';
 import { CategoryIcon } from './IconBadge';
 import './TaskList.css';
 
-export default function TaskList({ tasks = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
+export default function TaskList({ tasks = [], users = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
   // All categories start collapsed
   const [expandedCats, setExpandedCats] = useState({});
 
@@ -76,6 +76,7 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
               <FavoriteTaskCard
                 key={task.id}
                 task={{ ...task, categoryEmoji: cat.emoji }}
+                users={users}
                 baseRate={baseRate}
                 complexityMultipliers={complexityMultipliers}
                 onComplete={onCompleteTask}
@@ -106,6 +107,7 @@ export default function TaskList({ tasks = [], categories = [], baseRate = 0.10,
                 <FavoriteTaskCard
                   key={task.id}
                   task={{ ...task, categoryEmoji: catDetails.emoji }}
+                  users={users}
                   baseRate={baseRate}
                   complexityMultipliers={complexityMultipliers}
                   onComplete={onCompleteTask}
