@@ -9,6 +9,7 @@ import {
   getTaskDurationMinutes,
   getTaskBaseCost,
 } from '../data/pricing';
+import { computeSmartAllowInFeats, getTaskAllowInFeats } from '../data/feats';
 import './TaskForm.css';
 
 const WEEKDAYS = [
@@ -69,6 +70,8 @@ export default function TaskForm({
   const [customUnit, setCustomUnit] = useState('days');
   const [fromLastCompletion, setFromLastCompletion] = useState(false);
   const [isCritical, setIsCritical] = useState(task ? !!task.is_critical : false);
+  const [allowInFeats, setAllowInFeats] = useState(task ? getTaskAllowInFeats(task) : true);
+  const [isAllowInFeatsTouched, setIsAllowInFeatsTouched] = useState(task ? task.allow_in_feats !== undefined : false);
 
   const [errors, setErrors] = useState({});
 
@@ -115,6 +118,8 @@ export default function TaskForm({
       setCustomUnit(parsed.customUnit);
       setFromLastCompletion(parsed.fromLastCompletion);
       setIsCritical(!!task.is_critical);
+      setAllowInFeats(getTaskAllowInFeats(task));
+      setIsAllowInFeatsTouched(task.allow_in_feats !== undefined);
 
       const isRecurring = parsed.repeatFrequency !== 'none' && task.type !== 'ad-hoc';
       setMakeRecurring(isRecurring);
@@ -132,9 +137,31 @@ export default function TaskForm({
         setCategory(categories[0]?.id || '');
         setMakeRecurring(true);
       }
+      const smartDefault = computeSmartAllowInFeats({
+        title: '',
+        is_one_off: mode === 'simplified',
+        type: mode === 'simplified' ? 'ad-hoc' : 'recurring',
+      });
+      setAllowInFeats(smartDefault);
+      setIsAllowInFeatsTouched(false);
     }
     requestAnimationFrame(() => setVisible(true));
   }, [task, mode, categories]);
+
+  // Auto-recalculate allowInFeats on title/recurrence changes if user hasn't manually touched it
+  useEffect(() => {
+    if (!isAllowInFeatsTouched && !task) {
+      const isOneOff = (mode === 'simplified' && !makeRecurring) || repeatFrequency === 'none';
+      const computedType = isOneOff ? 'ad-hoc' : (repeatFrequency === 'always' ? 'always-available' : 'recurring');
+      const smart = computeSmartAllowInFeats({
+        title,
+        is_one_off: isOneOff,
+        type: computedType,
+        recurrence: repeatFrequency,
+      });
+      setAllowInFeats(smart);
+    }
+  }, [title, makeRecurring, repeatFrequency, mode, isAllowInFeatsTouched, task]);
 
   const toggleWeeklyDay = (dayKey) => {
     if (weeklyDays.includes(dayKey)) {
@@ -279,6 +306,7 @@ export default function TaskForm({
       ),
       type: computedType,
       is_one_off: isOneOff,
+      allow_in_feats: allowInFeats,
       icon: icon || null,
       isActive: true,
       is_critical: isCritical,
@@ -754,6 +782,29 @@ export default function TaskForm({
                 type="checkbox"
                 checked={isCritical}
                 onChange={(e) => setIsCritical(e.target.checked)}
+              />
+              <span className="task-form__switch-slider" />
+            </label>
+          </div>
+
+          {/* Allow in Feats Pool Switch */}
+          <div className="task-form__critical-inline-row">
+            <div className="task-form__critical-text-group">
+              <span className="task-form__critical-title">
+                🎲 Allow in Feats pool
+              </span>
+              <span className="task-form__critical-subtitle">
+                Appears in "Draw a Task" & Feat Showcase
+              </span>
+            </div>
+            <label className="task-form__switch">
+              <input
+                type="checkbox"
+                checked={allowInFeats}
+                onChange={(e) => {
+                  setIsAllowInFeatsTouched(true);
+                  setAllowInFeats(e.target.checked);
+                }}
               />
               <span className="task-form__switch-slider" />
             </label>

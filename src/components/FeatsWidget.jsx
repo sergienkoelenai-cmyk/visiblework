@@ -1,5 +1,5 @@
 import React from 'react';
-import { isFeat, isEligibleForDraw } from '../data/feats.js';
+import { isFeat, isEligibleForDraw, getTaskAllowInFeats } from '../data/feats.js';
 import './FeatsWidget.css';
 
 export default function FeatsWidget({ tasks = [], onOpenGenerator, onOpenSelection }) {
@@ -7,6 +7,7 @@ export default function FeatsWidget({ tasks = [], onOpenGenerator, onOpenSelecti
   const eligibleTasks = tasks.filter(isEligibleForDraw);
   const activeOneOffTasks = tasks.filter((t) => {
     if (t.isActive === false) return false;
+    if (!getTaskAllowInFeats(t)) return false;
     return t.is_one_off === true || t.type === 'ad-hoc' || (!t.recurrence && t.type !== 'always-available');
   });
 

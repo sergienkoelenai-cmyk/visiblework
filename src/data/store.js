@@ -31,6 +31,7 @@ import { db, storage } from './firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { calculateNextDueDate } from './scheduler.js';
 import { calculateFinalReward } from './pricing.js';
+import { computeSmartAllowInFeats } from './feats.js';
 
 // ─── Collection references ──────────────────────────────────────────────────
 
@@ -199,6 +200,10 @@ export async function addTask(data) {
     createdAt: serverTimestamp(),
     ...data, // allow caller overrides
   };
+
+  taskData.allow_in_feats = data.allow_in_feats !== undefined
+    ? !!data.allow_in_feats
+    : computeSmartAllowInFeats(taskData);
 
   const ref = await addDoc(tasksCol, taskData);
   return ref.id;

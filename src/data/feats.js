@@ -87,19 +87,76 @@ export function getRecurrenceIntervalDays(task) {
   return 0;
 }
 
+const EXCLUDED_KEYWORDS = ['pay', 'bill', 'electricity', 'water', 'счет', 'счёт', 'оплата', 'электричество', 'вода', 'посылка'];
+
 /**
- * Strict pool eligibility check for Draw a Task randomizer:
+ * Check if a task title contains any restricted financial/routine utility keywords.
+ * @param {string} title
+ * @returns {boolean}
+ */
+export function hasExcludedKeyword(title = '') {
+  if (!title) return false;
+  const lower = title.toLowerCase();
+  return EXCLUDED_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+/**
+ * Calculate smart default for allow_in_feats:
+ * 1. Keyword Exclusion Override (pay, bill, electricity, water, счет, оплата, вода, посылка) -> false
+ * 2. is_one_off === true -> true
+ * 3. Recurring interval < 14 days -> false
+ * 4. Recurring interval >= 14 days -> true
+ *
+ * @param {Object} task
+ * @returns {boolean}
+ */
+export function computeSmartAllowInFeats(task) {
+  if (!task) return false;
+
+  if (hasExcludedKeyword(task.title || '')) {
+    return false;
+  }
+
+  const isOneOff = task.is_one_off === true || task.type === 'ad-hoc' || (!task.recurrence && task.type !== 'always-available');
+  if (isOneOff) {
+    return true;
+  }
+
+  if (task.type === 'recurring') {
+    const intervalDays = getRecurrenceIntervalDays(task);
+    return intervalDays >= 14;
+  }
+
+  return false;
+}
+
+/**
+ * Get resolved allow_in_feats flag, falling back to smart defaults if property is missing.
+ * @param {Object} task
+ * @returns {boolean}
+ */
+export function getTaskAllowInFeats(task) {
+  if (!task) return false;
+  if (task.allow_in_feats !== undefined && task.allow_in_feats !== null) {
+    return !!task.allow_in_feats;
+  }
+  return computeSmartAllowInFeats(task);
+}
+
+/**
+ * Strict pool eligibility check for Draw a Task randomizer & Feat Showcase:
  * Eligible IF AND ONLY IF:
- * - is_one_off === true (All active single-instance tasks)
- *   OR
- * - Task is recurring AND active AND due today/overdue AND repeat interval >= 14 days.
- * Excludes daily or weekly (<14d) recurring tasks.
+ * - allow_in_feats === true (or computed smart default is true)
+ * - task.isActive !== false
+ * - For recurring tasks, task is currently due today or overdue.
  *
  * @param {Object} task
  * @returns {boolean}
  */
 export function isEligibleForDraw(task) {
   if (!task || task.isActive === false) return false;
+
+  if (!getTaskAllowInFeats(task)) return false;
 
   const isOneOff = task.is_one_off === true || task.type === 'ad-hoc' || (!task.recurrence && task.type !== 'always-available');
 
@@ -108,8 +165,7 @@ export function isEligibleForDraw(task) {
   }
 
   if (task.type === 'recurring') {
-    if (!isTaskCurrentlyAvailable(task)) return false;
-    return getRecurrenceIntervalDays(task) >= 14;
+    return isTaskCurrentlyAvailable(task);
   }
 
   return false;
