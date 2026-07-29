@@ -333,17 +333,51 @@ export default function TaskForm({
     if (repeatFrequency === 'always') {
       return 'Always available task';
     }
+
+    const intervalNum = parseInt(customInterval, 10) || 1;
+    let freqText = '';
+
     if (repeatFrequency === 'daily') {
-      return `${dateText}, repeats daily`;
+      freqText = intervalNum === 1 ? 'repeats daily' : `repeats every ${intervalNum} days`;
+    } else if (repeatFrequency === 'weekly') {
+      const daysStr = weeklyDays.length > 0 ? ` on ${weeklyDays.join(', ')}` : '';
+      freqText = intervalNum === 1 ? `repeats weekly${daysStr}` : `repeats every ${intervalNum} weeks${daysStr}`;
+    } else if (repeatFrequency === 'monthly') {
+      const intervalPrefix = intervalNum === 1 ? 'repeats monthly' : `repeats every ${intervalNum} months`;
+      if (monthlyStrategy === 'day_of_month') {
+        freqText = `${intervalPrefix} on day ${monthlyDayOfMonth}`;
+      } else {
+        const posLabels = { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th', '-1': 'last' };
+        const dayLabels = { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' };
+        freqText = `${intervalPrefix} on ${posLabels[monthlyDayOfWeekPos] || '1st'} ${dayLabels[monthlyDayOfWeekDay] || 'Mon'}`;
+      }
+    } else if (repeatFrequency === 'custom') {
+      freqText = `repeats every ${intervalNum} ${customUnit}${fromLastCompletion ? ' (from completion)' : ''}`;
     }
-    if (repeatFrequency === 'weekly') {
-      return `${dateText}, repeats weekly`;
+
+    let endText = '';
+    if (endDateType === 'on_date' && endDateValue) {
+      endText = ` (until ${endDateValue})`;
+    } else if (endDateType === 'after_count' && endCountValue) {
+      endText = ` (${endCountValue} times)`;
     }
-    if (repeatFrequency === 'monthly') {
-      return `${dateText}, repeats monthly`;
-    }
-    return `${dateText}, custom schedule`;
-  }, [startDate, repeatFrequency]);
+
+    return `${dateText}, ${freqText}${endText}`;
+  }, [
+    startDate,
+    repeatFrequency,
+    customInterval,
+    customUnit,
+    weeklyDays,
+    monthlyStrategy,
+    monthlyDayOfMonth,
+    monthlyDayOfWeekPos,
+    monthlyDayOfWeekDay,
+    fromLastCompletion,
+    endDateType,
+    endDateValue,
+    endCountValue,
+  ]);
 
   const calculatedCost = getTaskBaseCost(
     { complexity, duration_minutes: durationMinutes, custom_cost: customCost },
@@ -707,6 +741,29 @@ export default function TaskForm({
                     </label>
                   </div>
 
+                  {/* Interval Option for Daily, Weekly, Monthly */}
+                  {(repeatFrequency === 'daily' || repeatFrequency === 'weekly' || repeatFrequency === 'monthly') && (
+                    <div className="task-form__interval-row">
+                      <label className="task-form__label task-form__label--inline">
+                        <span>Repeat every</span>
+                        <div className="task-form__interval-input-group">
+                          <input
+                            type="number"
+                            min="1"
+                            max="365"
+                            className="task-form__input task-form__interval-num-input"
+                            value={customInterval}
+                            onChange={(e) => setCustomInterval(e.target.value)}
+                          />
+                          <span className="task-form__interval-unit-label">
+                            {repeatFrequency === 'daily' ? 'day(s)' : repeatFrequency === 'weekly' ? 'week(s)' : 'month(s)'}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Weekly Days Picker */}
                   {repeatFrequency === 'weekly' && (
                     <div className="task-form__weekly-group">
                       {WEEKDAYS.map((d) => (
@@ -726,6 +783,84 @@ export default function TaskForm({
                     </div>
                   )}
 
+                  {/* Monthly Strategy Selector */}
+                  {repeatFrequency === 'monthly' && (
+                    <div className="task-form__monthly-box">
+                      <div className="task-form__segment-group task-form__segment-group--sub">
+                        <button
+                          type="button"
+                          className={`task-form__subsegment-btn ${
+                            monthlyStrategy === 'day_of_month' ? 'task-form__subsegment-btn--active' : ''
+                          }`}
+                          onClick={() => setMonthlyStrategy('day_of_month')}
+                        >
+                          Specific Day of Month
+                        </button>
+                        <button
+                          type="button"
+                          className={`task-form__subsegment-btn ${
+                            monthlyStrategy === 'day_of_week' ? 'task-form__subsegment-btn--active' : ''
+                          }`}
+                          onClick={() => setMonthlyStrategy('day_of_week')}
+                        >
+                          Relative Weekday
+                        </button>
+                      </div>
+
+                      {monthlyStrategy === 'day_of_month' && (
+                        <div className="task-form__row" style={{ marginTop: '8px' }}>
+                          <label className="task-form__label">
+                            Day of month (1-31)
+                            <input
+                              type="number"
+                              min="1"
+                              max="31"
+                              className="task-form__input"
+                              value={monthlyDayOfMonth}
+                              onChange={(e) => setMonthlyDayOfMonth(e.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {monthlyStrategy === 'day_of_week' && (
+                        <div className="task-form__row" style={{ marginTop: '8px' }}>
+                          <label className="task-form__label">
+                            Position
+                            <select
+                              className="task-form__select"
+                              value={monthlyDayOfWeekPos}
+                              onChange={(e) => setMonthlyDayOfWeekPos(Number(e.target.value))}
+                            >
+                              <option value={1}>1st</option>
+                              <option value={2}>2nd</option>
+                              <option value={3}>3rd</option>
+                              <option value={4}>4th</option>
+                              <option value={-1}>Last</option>
+                            </select>
+                          </label>
+                          <label className="task-form__label">
+                            Weekday
+                            <select
+                              className="task-form__select"
+                              value={monthlyDayOfWeekDay}
+                              onChange={(e) => setMonthlyDayOfWeekDay(e.target.value)}
+                            >
+                              <option value="MO">Monday</option>
+                              <option value="TU">Tuesday</option>
+                              <option value="WE">Wednesday</option>
+                              <option value="TH">Thursday</option>
+                              <option value="FR">Friday</option>
+                              <option value="SA">Saturday</option>
+                              <option value="SU">Sunday</option>
+                            </select>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Custom Frequency Details */}
                   {repeatFrequency === 'custom' && (
                     <div className="task-form__custom-interval-box">
                       <div className="task-form__row">
@@ -760,6 +895,72 @@ export default function TaskForm({
                         />
                         <span>Schedule from completion date</span>
                       </label>
+                    </div>
+                  )}
+
+                  {/* End Condition Controls ("Ends") */}
+                  {repeatFrequency !== 'none' && repeatFrequency !== 'always' && (
+                    <div className="task-form__ends-box">
+                      <span className="task-form__section-label">ENDS</span>
+                      <div className="task-form__segment-group task-form__segment-group--sub">
+                        <button
+                          type="button"
+                          className={`task-form__subsegment-btn ${
+                            endDateType === 'never' ? 'task-form__subsegment-btn--active' : ''
+                          }`}
+                          onClick={() => setEndDateType('never')}
+                        >
+                          Never
+                        </button>
+                        <button
+                          type="button"
+                          className={`task-form__subsegment-btn ${
+                            endDateType === 'on_date' ? 'task-form__subsegment-btn--active' : ''
+                          }`}
+                          onClick={() => setEndDateType('on_date')}
+                        >
+                          On Date
+                        </button>
+                        <button
+                          type="button"
+                          className={`task-form__subsegment-btn ${
+                            endDateType === 'after_count' ? 'task-form__subsegment-btn--active' : ''
+                          }`}
+                          onClick={() => setEndDateType('after_count')}
+                        >
+                          After Count
+                        </button>
+                      </div>
+
+                      {endDateType === 'on_date' && (
+                        <div className="task-form__row" style={{ marginTop: '8px' }}>
+                          <label className="task-form__label">
+                            End date
+                            <input
+                              type="date"
+                              className="task-form__input"
+                              value={endDateValue}
+                              onChange={(e) => setEndDateValue(e.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {endDateType === 'after_count' && (
+                        <div className="task-form__row" style={{ marginTop: '8px' }}>
+                          <label className="task-form__label">
+                            Occurrences
+                            <input
+                              type="number"
+                              min="1"
+                              max="999"
+                              className="task-form__input"
+                              value={endCountValue}
+                              onChange={(e) => setEndCountValue(e.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -853,7 +1054,7 @@ function parseRRuleToState(recurrence, taskType) {
     return {
       ...defaults,
       repeatFrequency: 'custom',
-      customInterval: String(recurrence.intervalValue || 1),
+      customInterval: String(recurrence.intervalValue || recurrence.intervalDays || 1),
       customUnit: recurrence.intervalUnit || 'days',
       fromLastCompletion: true,
       startDate: recurrence.startDate || defaults.startDate,
@@ -865,37 +1066,103 @@ function parseRRuleToState(recurrence, taskType) {
 
   try {
     const rule = rrulestr(rruleString);
-    const options = rule.origOptions;
+    const options = rule.origOptions || {};
 
     let repeatFrequency = 'none';
     if (options.freq === RRule.DAILY) repeatFrequency = 'daily';
     else if (options.freq === RRule.WEEKLY) repeatFrequency = 'weekly';
     else if (options.freq === RRule.MONTHLY) repeatFrequency = 'monthly';
 
+    let customInterval = String(options.interval || 1);
+    let customUnit = 'days';
+    if (options.freq === RRule.WEEKLY) customUnit = 'weeks';
+    if (options.freq === RRule.MONTHLY) customUnit = 'months';
+
     let weeklyDays = [];
+    let monthlyStrategy = 'day_of_month';
+    let monthlyDayOfMonth = defaults.monthlyDayOfMonth;
+    let monthlyDayOfWeekPos = 1;
+    let monthlyDayOfWeekDay = 'MO';
+
+    const dayCodes = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+
     if (options.byweekday) {
       const daysArr = Array.isArray(options.byweekday) ? options.byweekday : [options.byweekday];
-      weeklyDays = daysArr.map((d) => {
-        if (typeof d === 'number') {
-          return ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'][d];
+      if (options.freq === RRule.WEEKLY) {
+        weeklyDays = daysArr.map((d) => {
+          if (typeof d === 'number') return dayCodes[d];
+          if (d && d.weekday !== undefined) return dayCodes[d.weekday];
+          return d.toString();
+        });
+      } else if (options.freq === RRule.MONTHLY) {
+        monthlyStrategy = 'day_of_week';
+        const firstDay = daysArr[0];
+        if (typeof firstDay === 'object' && firstDay !== null) {
+          monthlyDayOfWeekDay = dayCodes[firstDay.weekday] || 'MO';
+          monthlyDayOfWeekPos = firstDay.n || 1;
+        } else if (typeof firstDay === 'number') {
+          monthlyDayOfWeekDay = dayCodes[firstDay] || 'MO';
+          monthlyDayOfWeekPos = 1;
         }
-        return d.toString();
-      });
+      }
+    }
+
+    if (options.bymonthday && options.freq === RRule.MONTHLY) {
+      monthlyStrategy = 'day_of_month';
+      const mdays = Array.isArray(options.bymonthday) ? options.bymonthday : [options.bymonthday];
+      monthlyDayOfMonth = mdays[0];
     }
 
     let startDate = defaults.startDate;
     if (options.dtstart) {
-      startDate = options.dtstart.toISOString().slice(0, 10);
+      const d = new Date(options.dtstart);
+      startDate = d.toISOString().slice(0, 10);
+    }
+
+    let endDateType = 'never';
+    let endDateValue = defaults.endDateValue;
+    let endCountValue = defaults.endCountValue;
+
+    if (options.until) {
+      endDateType = 'on_date';
+      const d = new Date(options.until);
+      endDateValue = d.toISOString().slice(0, 10);
+    } else if (options.count) {
+      endDateType = 'after_count';
+      endCountValue = String(options.count);
     }
 
     return {
       ...defaults,
       startDate,
+      endDateType,
+      endDateValue,
+      endCountValue,
       repeatFrequency,
       weeklyDays,
+      monthlyStrategy,
+      monthlyDayOfMonth,
+      monthlyDayOfWeekPos,
+      monthlyDayOfWeekDay,
+      customInterval,
+      customUnit,
     };
   } catch (e) {
+    console.error('Failed to parse RRule:', e);
     return defaults;
+  }
+}
+
+function getWeekdayObj(code) {
+  switch (code) {
+    case 'MO': return RRule.MO;
+    case 'TU': return RRule.TU;
+    case 'WE': return RRule.WE;
+    case 'TH': return RRule.TH;
+    case 'FR': return RRule.FR;
+    case 'SA': return RRule.SA;
+    case 'SU': return RRule.SU;
+    default: return RRule.MO;
   }
 }
 
@@ -905,43 +1172,56 @@ function generateRRule(state) {
   }
 
   const [year, month, day] = state.startDate.split('-').map(Number);
-  const dtstart = new Date(Date.UTC(year, month - 1, day));
+  const dtstart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
 
   const options = {
     dtstart,
   };
 
+  const intervalVal = parseInt(state.customInterval, 10) || 1;
+  if (intervalVal > 1) {
+    options.interval = intervalVal;
+  }
+
+  if (state.endDateType === 'on_date' && state.endDateValue) {
+    const [ey, em, ed] = state.endDateValue.split('-').map(Number);
+    options.until = new Date(Date.UTC(ey, em - 1, ed, 23, 59, 59, 999));
+  } else if (state.endDateType === 'after_count' && state.endCountValue) {
+    const countNum = parseInt(state.endCountValue, 10);
+    if (countNum > 0) {
+      options.count = countNum;
+    }
+  }
+
   if (state.repeatFrequency === 'daily') {
     options.freq = RRule.DAILY;
   } else if (state.repeatFrequency === 'weekly') {
     options.freq = RRule.WEEKLY;
-    if (state.weeklyDays.length > 0) {
-      options.byweekday = state.weeklyDays.map((d) => {
-        switch (d) {
-          case 'MO': return RRule.MO;
-          case 'TU': return RRule.TU;
-          case 'WE': return RRule.WE;
-          case 'TH': return RRule.TH;
-          case 'FR': return RRule.FR;
-          case 'SA': return RRule.SA;
-          case 'SU': return RRule.SU;
-          default: return RRule.MO;
-        }
-      });
+    if (state.weeklyDays && state.weeklyDays.length > 0) {
+      options.byweekday = state.weeklyDays.map(getWeekdayObj);
     }
   } else if (state.repeatFrequency === 'monthly') {
     options.freq = RRule.MONTHLY;
+    if (state.monthlyStrategy === 'day_of_week') {
+      const wday = getWeekdayObj(state.monthlyDayOfWeekDay || 'MO');
+      const pos = parseInt(state.monthlyDayOfWeekPos, 10) || 1;
+      options.byweekday = [wday.nth(pos)];
+    } else {
+      const dayNum = parseInt(state.monthlyDayOfMonth, 10) || dtstart.getUTCDate();
+      options.bymonthday = [dayNum];
+    }
   } else if (state.repeatFrequency === 'custom') {
-    const val = state.customInterval === '' ? 1 : parseInt(state.customInterval, 10) || 1;
-    options.interval = val;
-    if (state.customUnit === 'days') options.freq = RRule.DAILY;
-    else if (state.customUnit === 'weeks') options.freq = RRule.WEEKLY;
+    options.interval = intervalVal;
+    if (state.customUnit === 'weeks') options.freq = RRule.WEEKLY;
     else if (state.customUnit === 'months') options.freq = RRule.MONTHLY;
+    else options.freq = RRule.DAILY;
   }
 
   try {
     return new RRule(options);
   } catch (e) {
+    console.error('Failed to generate RRule:', e);
     return null;
   }
 }
+

@@ -124,7 +124,7 @@ export function calculateNextDueDate(task, completionDate) {
         : new Date(2020, 0, 1);
       const rule = rrulestr(rruleString, { dtstart: dtstartAnchor });
       // Ensure completionDate reference is set to end-of-day so RRule finds next occurrence on a FUTURE day.
-      const compDateRef = new Date(compDate);
+      const compDateRef = new Date(completionDate);
       compDateRef.setHours(23, 59, 59, 999);
       const next = rule.after(compDateRef);
       return next ? startOfDay(next) : null;

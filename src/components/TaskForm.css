@@ -512,6 +512,77 @@
   word-break: break-word;
 }
 
+/* ── Interval & Monthly & End Condition Box Styles ── */
+.task-form__label--inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.task-form__interval-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-form__interval-num-input {
+  width: 64px !important;
+  min-height: 34px !important;
+  padding: 4px 8px !important;
+  text-align: center;
+}
+
+.task-form__interval-unit-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.task-form__monthly-box,
+.task-form__ends-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.task-form__segment-group--sub {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.task-form__subsegment-btn {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-form__subsegment-btn--active {
+  background: #ffffff;
+  color: var(--color-text);
+  font-weight: 700;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
 /* ── Inline Critical Priority Row ── */
 .task-form__critical-inline-row {
   display: flex;

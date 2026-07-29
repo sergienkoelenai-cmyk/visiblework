@@ -135,10 +135,27 @@ function App() {
         if (!isMounted) return;
 
         for (const task of tasks) {
-          if (!task || task.isActive === false) continue;
+          if (!task) continue;
           if (task.recurrence || task.type === 'recurring') {
             const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
             const currentDue = toJsDate(task.nextDueDate);
+
+            if (task.isActive === false) {
+              // Task is inactive: check if it was mistakenly deactivated without completion
+              if (!compDate) {
+                const created = toJsDate(task.created_at) || new Date();
+                const refDate = new Date(created.getTime() - 24 * 60 * 60 * 1000);
+                const calculatedDate = calculateNextDueDate(task, refDate);
+                if (calculatedDate && !isNaN(calculatedDate.getTime())) {
+                  console.log(`[Auto-Fix] Reactivating mistakenly deactivated task "${task.title}" with nextDueDate ${calculatedDate.toISOString()}`);
+                  await updateTask(task.id, {
+                    isActive: true,
+                    nextDueDate: calculatedDate,
+                  });
+                }
+              }
+              continue;
+            }
 
             if (compDate) {
               const compDay = new Date(compDate);
@@ -162,10 +179,18 @@ function App() {
                   });
                 }
               }
-            } else if (currentDue) {
-              const calculatedDate = calculateNextDueDate(task, currentDue);
-              if (!calculatedDate) {
-                console.log(`[Auto-Fix] Deactivating expired task "${task.title}"`);
+            } else if (!currentDue) {
+              // Task has no completion date AND no nextDueDate: calculate initial due date
+              const created = toJsDate(task.created_at) || new Date();
+              const refDate = new Date(created.getTime() - 24 * 60 * 60 * 1000);
+              const calculatedDate = calculateNextDueDate(task, refDate);
+              if (calculatedDate && !isNaN(calculatedDate.getTime())) {
+                console.log(`[Auto-Fix] Setting initial nextDueDate for "${task.title}" to ${calculatedDate.toISOString()}`);
+                await updateTask(task.id, {
+                  nextDueDate: calculatedDate
+                });
+              } else {
+                console.log(`[Auto-Fix] Deactivating task with no occurrences "${task.title}"`);
                 await updateTask(task.id, {
                   nextDueDate: null,
                   isActive: false
