@@ -41,6 +41,8 @@ import FeatsDrawer from './components/FeatsDrawer'
 import CriticalFocusBlock from './components/CriticalFocusBlock'
 import OneOffTaskSelectionModal from './components/OneOffTaskSelectionModal'
 import HomeFooter from './components/HomeFooter'
+import SearchResultsList from './components/SearchResultsList'
+import { useTaskSearch } from './hooks/useTaskSearch'
 import { getTaskAllowInFeats } from './data/feats'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
@@ -65,6 +67,13 @@ function App() {
   })
   const [page, setPage] = useState('dashboard') // 'dashboard' | 'settings' | 'analytics'
   
+  // Search state
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef(null)
+
+  const searchResults = useTaskSearch(searchQuery, tasks, categories)
+
   // Modal states
   const [completingTask, setCompletingTask] = useState(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -550,6 +559,25 @@ function App() {
           </div>
           <div className="app-header-actions">
             <button
+              className={`btn btn-ghost btn-icon ${isSearchOpen ? 'btn-icon--active' : ''}`}
+              onClick={() => {
+                setIsSearchOpen((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setTimeout(() => searchInputRef.current?.focus(), 100);
+                  } else {
+                    setSearchQuery('');
+                  }
+                  return next;
+                });
+              }}
+              id="search-btn"
+              title="Search tasks"
+              type="button"
+            >
+              🔍
+            </button>
+            <button
               className="btn btn-primary app-header-new-btn"
               onClick={() => { setEditingTask(null); setTaskFormMode('simplified'); setShowTaskForm(true) }}
               id="add-task-btn"
@@ -574,55 +602,110 @@ function App() {
             </button>
           </div>
         </div>
+
+        {/* Expandable Search Input Bar */}
+        {isSearchOpen && (
+          <div className="app-search-bar">
+            <div className="app-search-input-wrapper">
+              <span className="app-search-icon">🔍</span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="app-search-input"
+                placeholder="Search tasks, categories, feats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="app-search-clear-btn"
+                  onClick={() => setSearchQuery('')}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="app-search-cancel-btn"
+              onClick={() => {
+                setIsSearchOpen(false);
+                setSearchQuery('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <FamilyBar users={users} onUserClick={handleUserClick} />
       </header>
 
       {/* Main Dashboard */}
       <main className="app-main">
-        {/* Critical Focus Block */}
-        <CriticalFocusBlock
-          tasks={criticalTasks}
-          categories={categories}
-          baseRate={settings.base_rate ?? 0.10}
-          complexityMultipliers={settings.complexity_multipliers}
-          onCompleteTask={handleCompleteTask}
-        />
-
-        {/* Feats & Task Generator Widget */}
-        <FeatsWidget
-          tasks={tasks}
-          onOpenGenerator={() => setShowFeatsDrawer(true)}
-          onOpenSelection={() => setShowOneOffSelectionModal(true)}
-        />
-
-        <section className="dashboard-section">
-          <TaskList
-            tasks={todayTasks}
-            users={users}
-            categories={categories}
-            baseRate={settings.base_rate ?? 0.10}
-            complexityMultipliers={settings.complexity_multipliers}
-            onCompleteTask={handleCompleteTask}
-            showFavorites
-          />
-        </section>
-
-        {upcomingTasks.length > 0 && (
+        {isSearchOpen && searchQuery.trim().length > 0 ? (
           <section className="dashboard-section">
-            <TaskList
-              tasks={upcomingTasks}
-              users={users}
+            <SearchResultsList
+              searchResults={searchResults}
+              searchQuery={searchQuery}
+              baseRate={settings.base_rate ?? 0.10}
+              complexityMultipliers={settings.complexity_multipliers}
+              onSelectTask={(task) => {
+                handleCompleteTask(task);
+              }}
+            />
+          </section>
+        ) : (
+          <>
+            {/* Critical Focus Block */}
+            <CriticalFocusBlock
+              tasks={criticalTasks}
               categories={categories}
               baseRate={settings.base_rate ?? 0.10}
               complexityMultipliers={settings.complexity_multipliers}
               onCompleteTask={handleCompleteTask}
-              sectionLabel="UPCOMING TASKS"
             />
-          </section>
-        )}
 
-        {/* End-of-Scroll Footer Anchor */}
-        <HomeFooter version="v2.6.3" />
+            {/* Feats & Task Generator Widget */}
+            <FeatsWidget
+              tasks={tasks}
+              onOpenGenerator={() => setShowFeatsDrawer(true)}
+              onOpenSelection={() => setShowOneOffSelectionModal(true)}
+            />
+
+            <section className="dashboard-section">
+              <TaskList
+                tasks={todayTasks}
+                users={users}
+                categories={categories}
+                baseRate={settings.base_rate ?? 0.10}
+                complexityMultipliers={settings.complexity_multipliers}
+                onCompleteTask={handleCompleteTask}
+                showFavorites
+              />
+            </section>
+
+            {upcomingTasks.length > 0 && (
+              <section className="dashboard-section">
+                <TaskList
+                  tasks={upcomingTasks}
+                  users={users}
+                  categories={categories}
+                  baseRate={settings.base_rate ?? 0.10}
+                  complexityMultipliers={settings.complexity_multipliers}
+                  onCompleteTask={handleCompleteTask}
+                  sectionLabel="UPCOMING TASKS"
+                />
+              </section>
+            )}
+
+            {/* End-of-Scroll Footer Anchor */}
+            <HomeFooter version="v2.7.0" />
+          </>
+        )}
       </main>
 
       {/* --- Toast Notification Banner --- */}
