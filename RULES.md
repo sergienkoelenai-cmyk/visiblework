@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.9  | Favourites Ultra-Dense Grid: removed separate top price row from FavouriteGridCard; title starts at top of cell, combined footer row (meta left / price right), tighter padding 6px/8px, grid gap 6px, price font 10px |
 | v2.7.8  | Favourites Compact 2-Column Grid: new FavouriteGridCard component (calc(50%-4px) width, F8FAFC cells, inline emoji+title 3-line clamp, gold price top-right, lime meta badge 👤), flex-wrap grid container #FFFFFF/#F4FCE3; removed icon blocks and checkboxes |
 | v2.7.7  | Favourites Section Redesign: new FavouriteDashboardRow component (multi-line title, lime meta badge 👤 Who•When, gold price pill min-width 54px, lime checkmark circle button), section header shows count ⭐ FAVORITES (N), white card container #F4FCE3 border, deep lime label #4D7C0F |
 | v2.7.6  | Category Accordion Visual Hierarchy & Sub-task Nesting: bold 16px/700 parent headers, ▾/▸ chevrons, lime count badges (#F4FCE3/#4D7C0F) on Home, coral (#FB7185) on Settings; inset nested containers with left border guide line (BEF264 lime / FB7185 coral), F8FAFC fill; FavoriteTaskCard isNested prop with 14px/500 title, compact gold reward pill (#FEF3C7/#D97706) |
