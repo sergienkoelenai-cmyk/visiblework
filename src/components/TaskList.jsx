@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import FavoriteTaskCard from './FavoriteTaskCard';
-import FavouriteDashboardRow from './FavouriteDashboardRow';
+import FavouriteGridCard from './FavouriteGridCard';
 import { CategoryIcon } from './IconBadge';
 import './TaskList.css';
 
@@ -75,17 +75,17 @@ export default function TaskList({
 
   return (
     <div className="task-list">
-      {/* ── Favorites Section ── */}
+      {/* ── Favorites Grid Section ── */}
       {favoriteTasks.length > 0 && (
         <section className="task-list__section">
           <span className="task-list__section-label task-list__section-label--favorite">
             ⭐ FAVORITES ({favoriteTasks.length})
           </span>
-          <div className="fav-section__card">
+          <div className="fav-section__grid">
             {favoriteTasks.map((task) => {
               const catDetails = getCategoryDetails(task.category || 'other');
               return (
-                <FavouriteDashboardRow
+                <FavouriteGridCard
                   key={task.id}
                   task={{ ...task, categoryEmoji: catDetails.emoji }}
                   users={users}
