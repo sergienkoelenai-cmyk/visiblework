@@ -1,53 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from './Avatar';
 import AppEmoji from './AppEmoji';
-import IconBadge, { CategoryIcon } from './IconBadge';
-import { getTaskBaseCost } from '../data/pricing';
+import { CategoryIcon } from './IconBadge';
+import CategorySettingCard from './CategorySettingCard';
+import ArchivedTasksSection from './ArchivedTasksSection';
 import './SettingsPage.css';
-
-import { rrulestr } from 'rrule';
-
-function getRecurrenceLabel(task) {
-  if (task.type === 'ad-hoc') return 'One-time';
-  if (task.type === 'always-available') return 'Always available';
-  const rec = task.recurrence;
-  if (!rec) return 'Recurring';
-
-  // Check if it is the new RRULE format
-  const rruleString = typeof rec === 'string'
-    ? rec
-    : (rec.rrule || null);
-
-  if (rruleString) {
-    try {
-      const rule = rrulestr(rruleString);
-      return rule.toText();
-    } catch (e) {
-      console.error('Failed to parse RRule for label:', e);
-      return 'Recurring';
-    }
-  }
-
-  if (rec.mode === 'interval_from_completion') {
-    const val = rec.intervalValue || rec.intervalDays || 1;
-    const unit = rec.intervalUnit || 'days';
-    return `${val} ${unit} after completion`;
-  }
-  if (rec.mode === 'fixed_interval') {
-    return `Every ${rec.fixedIntervalValue} ${rec.fixedIntervalUnit}`;
-  }
-  if (rec.mode === 'custom_schedule') {
-    return 'Custom schedule';
-  }
-  return 'Recurring';
-}
 
 export default function SettingsPage({
   users = [],
   tasks = [],
   categories = [],
-  completions = [],
+  completions: _completions = [],
   baseRate = 0.10,
   complexityMultipliers = { LOW: 1.0, MEDIUM: 1.5, HIGH: 2.5 },
   onUpdateSettings,
@@ -59,7 +23,7 @@ export default function SettingsPage({
   onAddTaskInCategory,
   onAddCategory,
   onDeleteCategory,
-  onRevertCompletion,
+  onRevertCompletion: _onRevertCompletion,
   onCashout,
   onSignOut,
   onBack,
@@ -94,48 +58,20 @@ export default function SettingsPage({
     setExpandedSections((prev) => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
   };
 
-  // Collapsible task category groups inside Manage Tasks
+  // Collapsible task category accordion cards
   const [expandedTaskCats, setExpandedTaskCats] = useState({});
 
   const toggleTaskCat = (catId) => {
     setExpandedTaskCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
   };
 
-  // Keep input in sync if the prop changes from outside (e.g. another device)
+  // Keep input in sync if prop changes
   React.useEffect(() => {
     setBaseRateInput(String(baseRate));
     setLowMultInput(String(complexityMultipliers?.LOW ?? 1.0));
     setMedMultInput(String(complexityMultipliers?.MEDIUM ?? 1.5));
     setHighMultInput(String(complexityMultipliers?.HIGH ?? 2.5));
   }, [baseRate, complexityMultipliers]);
-
-  // Group tasks by category and recurrence type
-  const groupedTasks = useMemo(() => {
-    const groups = {};
-    categories.forEach((cat) => {
-      groups[cat.id] = { adHoc: [], recurring: [], alwaysAvailable: [] };
-    });
-
-    tasks.forEach((task) => {
-      // Exclude inactive tasks (completed one-offs or recurring tasks that reached their end date/occurrence limit)
-      if (task.isActive === false) return;
-      if (task.type === 'recurring' && !task.nextDueDate && task.lastCompletedAt) return;
-
-      const catId = task.category || 'other';
-      if (!groups[catId]) {
-        groups[catId] = { adHoc: [], recurring: [], alwaysAvailable: [] };
-      }
-      if (task.type === 'recurring') {
-        groups[catId].recurring.push(task);
-      } else if (task.type === 'always-available') {
-        groups[catId].alwaysAvailable.push(task);
-      } else {
-        groups[catId].adHoc.push(task);
-      }
-    });
-
-    return groups;
-  }, [tasks, categories]);
 
   const handleStartEditCategory = (cat) => {
     setEditingCatId(cat.id);
@@ -187,147 +123,67 @@ export default function SettingsPage({
     setCatError('');
   };
 
-  const renderTaskItem = (task) => {
-    const cat = categories.find(c => c.id === task.category);
-    const emoji = task.icon || (cat ? cat.emoji : '📋');
-    
-    return (
-      <div key={task.id} className="settings__task-item">
-        <div className="settings__task-item-details">
-          <span className="settings__task-item-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <IconBadge
-              categoryId={!task.icon ? task.category : undefined}
-              emoji={emoji}
-              emojiOnly={!!task.icon}
-              size={28}
-              iconSize={15}
-            />
-            {task.isFavorite && <span style={{ fontSize: '14px' }}>⭐</span>}
-            {task.title}
-          </span>
-        <div className="settings__task-item-meta">
-          <span className="settings__task-item-recurrence">{getRecurrenceLabel(task)}</span>
-          <span className="settings__task-item-price">€{getTaskBaseCost(task, baseRate, complexityMultipliers).toFixed(2)}</span>
-        </div>
-      </div>
-      <div className="settings__task-item-actions">
-        <button className="settings__icon-btn" onClick={() => onEditTask?.(task)} title="Edit task" type="button">
-          ✏️
-        </button>
-        <button className="settings__icon-btn settings__icon-btn--danger" onClick={() => onDeleteTask?.(task.id)} title="Delete task" type="button">
-          🗑️
-        </button>
-      </div>
-    </div>
-    );
-  };
-
   return (
-    <div className="settings">
-      {/* Header */}
-      <header className="settings__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="settings__back" onClick={onBack} type="button">
-            ← Back
-          </button>
-          <h1 className="settings__title">Settings</h1>
-        </div>
-        <button
-          className="btn btn-secondary"
-          onClick={onSignOut}
-          type="button"
-          style={{ minHeight: '44px' }}
-        >
-          Sign Out
+    <div className="settings settings--warm">
+      {/* Top Header */}
+      <header className="settings__header">
+        <button className="settings__back-pill" onClick={onBack} type="button">
+          ← Back
         </button>
+        <h1 className="settings__title">Settings</h1>
+        <div className="settings__header-spacer" />
       </header>
 
-      {/* ── Tasks ── */}
+      {/* ── Tasks Section ── */}
       <section className="settings__section">
+        {/* Top Prominent Action: Create Task Template */}
+        <button
+          type="button"
+          className="settings__create-template-btn"
+          onClick={() => onAddTaskInCategory?.(categories[0]?.id || '')}
+        >
+          🪸 + Create Task Template
+        </button>
+
         <div className="settings__section-header">
-          <h2 className="settings__section-title">Tasks</h2>
+          <h2 className="settings__section-title">Task Categories</h2>
         </div>
 
+        {/* Task Category Accordion Cards */}
         <div className="settings__tasks-categories">
           {categories.map((cat) => {
-            const catGroup = groupedTasks[cat.id] || { adHoc: [], recurring: [], alwaysAvailable: [] };
-            const hasAdHoc = catGroup.adHoc.length > 0;
-            const hasRecurring = catGroup.recurring.length > 0;
-            const hasAlwaysAvailable = catGroup.alwaysAvailable.length > 0;
-            const hasAnyTasks = hasAdHoc || hasRecurring || hasAlwaysAvailable;
-            const totalTasksInCat = catGroup.adHoc.length + catGroup.recurring.length + catGroup.alwaysAvailable.length;
-            const isCatExpanded = !!expandedTaskCats[cat.id];
+            const catTasks = tasks.filter((t) => {
+              if (t.isActive === false) return false;
+              if (t.type === 'recurring' && !t.nextDueDate && t.lastCompletedAt) return false;
+              return (t.category || 'other') === cat.id;
+            });
 
             return (
-              <div key={cat.id} className="settings__category-group">
-                <div
-                  className="settings__category-header-row"
-                  onClick={() => toggleTaskCat(cat.id)}
-                >
-                  <h3 className="settings__category-title">
-                    <span
-                      className="settings__category-chevron"
-                      style={{ transform: isCatExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                    >
-                      ▶
-                    </span>
-                    <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={18} />
-                    {cat.label}
-                    <span className="settings__category-count">
-                      {totalTasksInCat}
-                    </span>
-                  </h3>
-                  <button
-                    className="settings__add-task-inline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedTaskCats(prev => ({ ...prev, [cat.id]: true }));
-                      onAddTaskInCategory?.(cat.id);
-                    }}
-                    type="button"
-                  >
-                    + Add Task
-                  </button>
-                </div>
-                
-                {isCatExpanded && (
-                  <div className="settings__category-content">
-                    {hasAlwaysAvailable && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">Always Available</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.alwaysAvailable.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {hasRecurring && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">Recurring</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.recurring.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {hasAdHoc && (
-                      <div className="settings__type-group">
-                        <h4 className="settings__type-title">One-time</h4>
-                        <div className="settings__tasks-list">
-                          {catGroup.adHoc.map(renderTaskItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    {!hasAnyTasks && (
-                      <p className="settings__category-empty">No tasks in this category.</p>
-                    )}
-                  </div>
-                )}
-              </div>
+              <CategorySettingCard
+                key={cat.id}
+                category={cat}
+                tasks={catTasks}
+                baseRate={baseRate}
+                complexityMultipliers={complexityMultipliers}
+                isExpanded={!!expandedTaskCats[cat.id]}
+                onToggleExpand={toggleTaskCat}
+                onEditTask={onEditTask}
+                onDeleteTask={onDeleteTask}
+                onAddTaskInCategory={onAddTaskInCategory}
+              />
             );
           })}
         </div>
+
+        {/* Dedicated Completed & Expired Tasks Archive Section */}
+        <ArchivedTasksSection
+          tasks={tasks}
+          categories={categories}
+          baseRate={baseRate}
+          complexityMultipliers={complexityMultipliers}
+          onEditTask={onEditTask}
+          onDeleteTask={onDeleteTask}
+        />
       </section>
 
       {/* ── Economy Settings ── */}
@@ -343,7 +199,7 @@ export default function SettingsPage({
           </h2>
         </div>
         {expandedSections.economy && (
-          <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #FFE4E6', borderRadius: '16px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 14px rgba(251, 113, 133, 0.05)' }}>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
               Task reward formula: <strong style={{ color: 'var(--color-text)' }}>Base Rate × Effort Coefficient × Duration (minutes)</strong>
             </p>
@@ -373,8 +229,8 @@ export default function SettingsPage({
                 Effort Coefficients
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟢 Low</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#FFF1F2', border: '1px solid #FECDD3', padding: '8px 10px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#E11D48' }}>🟢 Low</span>
                   <input
                     type="number"
                     min="0"
@@ -385,8 +241,8 @@ export default function SettingsPage({
                     style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🟡 Medium</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#FEF3C7', border: '1px solid #FDE68A', padding: '8px 10px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#D97706' }}>🟡 Medium</span>
                   <input
                     type="number"
                     min="0"
@@ -397,8 +253,8 @@ export default function SettingsPage({
                     style={{ fontWeight: 700, fontSize: '14px', padding: '6px 8px', minHeight: '34px' }}
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>🔴 High</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#FEE2E2', border: '1px solid #FCA5A5', padding: '8px 10px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#DC2626' }}>🔴 High</span>
                   <input
                     type="number"
                     min="0"
@@ -429,29 +285,10 @@ export default function SettingsPage({
                   setTimeout(() => setBaseRateSaved(false), 2000);
                 }
               }}
-              style={{ minHeight: '40px', padding: '8px 20px', alignSelf: 'flex-start' }}
+              style={{ minHeight: '40px', padding: '8px 20px', alignSelf: 'flex-start', background: '#FB7185', borderRadius: '9999px' }}
             >
               {baseRateSaved ? '✓ Saved Economy Settings' : 'Save Economy Settings'}
             </button>
-
-            {/* Formula preview chips */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
-              {(() => {
-                const r = parseFloat(baseRateInput) || 0;
-                const l = parseFloat(lowMultInput) || 1.0;
-                const m = parseFloat(medMultInput) || 1.5;
-                const h = parseFloat(highMultInput) || 2.5;
-                return [
-                  { label: `Low (${l}×) + 5m`, cost: `€${(Math.round(r * l * 5 * 100) / 100).toFixed(2)}` },
-                  { label: `Medium (${m}×) + 30m`, cost: `€${(Math.round(r * m * 30 * 100) / 100).toFixed(2)}` },
-                  { label: `High (${h}×) + 60m`, cost: `€${(Math.round(r * h * 60 * 100) / 100).toFixed(2)}` },
-                ].map(ex => (
-                  <span key={ex.label} style={{ fontSize: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', color: 'var(--color-text-secondary)' }}>
-                    {ex.label}: <strong style={{ color: 'var(--color-text)' }}>{ex.cost}</strong>
-                  </span>
-                ));
-              })()}
-            </div>
           </div>
         )}
       </section>
@@ -466,7 +303,7 @@ export default function SettingsPage({
           <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.family ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
             Family Members
-            <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+            <span style={{ fontSize: '12px', background: '#FFF1F2', color: '#FB7185', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
               {users.length}
             </span>
           </h2>
@@ -479,7 +316,7 @@ export default function SettingsPage({
                 className="settings__add-btn"
                 onClick={onAddUser}
                 type="button"
-                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
+                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px', background: '#FB7185', borderRadius: '9999px' }}
               >
                 + Add Member
               </button>
@@ -526,7 +363,7 @@ export default function SettingsPage({
         )}
       </section>
 
-      {/* ── Categories ── */}
+      {/* ── Categories Management ── */}
       <section className="settings__section">
         <div
           className="settings__section-header"
@@ -535,8 +372,8 @@ export default function SettingsPage({
         >
           <h2 className="settings__section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'inline-block', fontSize: '13px', transition: 'transform 0.2s ease', transform: expandedSections.categories ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--color-text-secondary)' }}>▶</span>
-            Categories
-            <span style={{ fontSize: '12px', background: 'var(--color-surface-active)', color: 'var(--color-text-secondary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+            Manage Categories
+            <span style={{ fontSize: '12px', background: '#FFF1F2', color: '#FB7185', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
               {categories.length}
             </span>
           </h2>
@@ -555,7 +392,7 @@ export default function SettingsPage({
                   setShowCatEmojiPickerForId(null);
                 }}
                 type="button"
-                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px' }}
+                style={{ padding: '8px 16px', minHeight: '38px', fontSize: '13px', background: '#FB7185', borderRadius: '9999px' }}
               >
                 + Add Category
               </button>
@@ -595,10 +432,10 @@ export default function SettingsPage({
                   </div>
 
                   <input
-                    className="task-form__input"
+                    className={`task-form__input ${catError ? 'task-form__input--error' : ''}`}
                     type="text"
                     value={newCatLabel}
-                    onChange={(e) => setNewCatLabel(e.target.value)}
+                    onChange={(e) => { setNewCatLabel(e.target.value); setCatError(''); }}
                     placeholder="New Category..."
                     autoFocus
                     style={{ flex: 1, minHeight: '36px', padding: '6px 10px', fontSize: '13px' }}
@@ -609,14 +446,14 @@ export default function SettingsPage({
                       className="settings__category-btn"
                       type="submit"
                       title="Save category"
-                      style={{ background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }}
+                      style={{ background: '#FB7185', color: '#fff', borderColor: '#FB7185' }}
                     >
                       ✓
                     </button>
                     <button
                       className="settings__category-btn"
                       type="button"
-                      onClick={() => { setShowAddCat(false); setShowCatEmojiPickerForId(null); }}
+                      onClick={() => { setShowAddCat(false); setShowCatEmojiPickerForId(null); setCatError(''); }}
                       title="Cancel"
                     >
                       ✕
@@ -661,10 +498,10 @@ export default function SettingsPage({
                       </div>
 
                       <input
-                        className="task-form__input"
+                        className={`task-form__input ${catError ? 'task-form__input--error' : ''}`}
                         type="text"
                         value={editingCatLabel}
-                        onChange={(e) => setEditingCatLabel(e.target.value)}
+                        onChange={(e) => { setEditingCatLabel(e.target.value); setCatError(''); }}
                         placeholder="Category Name"
                         autoFocus
                         style={{ flex: 1, minHeight: '36px', padding: '6px 10px', fontSize: '13px' }}
@@ -675,7 +512,7 @@ export default function SettingsPage({
                           className="settings__category-btn"
                           type="submit"
                           title="Save changes"
-                          style={{ background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }}
+                          style={{ background: '#FB7185', color: '#fff', borderColor: '#FB7185' }}
                         >
                           ✓
                         </button>
@@ -726,22 +563,21 @@ export default function SettingsPage({
         )}
       </section>
 
-
-
+      {/* Delete Member Confirmation Modal */}
       {deletingUser && (
         <div className="overlay-backdrop" onClick={() => setDeletingUser(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#FFFFFF', border: '1px solid #FFE4E6', borderRadius: '20px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
               ⚠️ Delete Family Member?
             </h3>
             
-            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0 }}>
-              Are you sure you want to delete <strong style={{ color: 'var(--color-text)' }}>{deletingUser.name}</strong>?
+            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.45', margin: 0 }}>
+              Are you sure you want to delete <strong style={{ color: '#0F172A' }}>{deletingUser.name}</strong>?
             </p>
 
-            <div style={{ background: 'rgba(255, 82, 82, 0.05)', border: '1px solid rgba(255, 82, 82, 0.15)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: '12px', color: 'var(--color-danger)', fontWeight: 500, margin: 0, lineHeight: 1.4 }}>
-                This will permanently delete their profile and erase their current accumulated earnings of <strong>€{(deletingUser.balance ?? 0).toFixed(2)}</strong>. Historical completions will remain in logs but won't be editable under this user. This action cannot be undone.
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', padding: '12px 14px', borderRadius: '12px' }}>
+              <p style={{ fontSize: '12px', color: '#EF4444', fontWeight: 500, margin: 0, lineHeight: 1.4 }}>
+                This will permanently delete their profile and erase their current accumulated earnings of <strong>€{(deletingUser.balance ?? 0).toFixed(2)}</strong>. Historical completions will remain in logs. This action cannot be undone.
               </p>
             </div>
 
@@ -750,7 +586,7 @@ export default function SettingsPage({
                 className="btn btn-secondary" 
                 onClick={() => setDeletingUser(null)} 
                 type="button" 
-                style={{ padding: '8px 16px', minHeight: '38px' }}
+                style={{ padding: '8px 16px', minHeight: '38px', borderRadius: '9999px' }}
               >
                 Cancel
               </button>
@@ -761,7 +597,7 @@ export default function SettingsPage({
                   setDeletingUser(null);
                 }} 
                 type="button" 
-                style={{ padding: '8px 16px', minHeight: '38px', background: 'var(--color-danger)', color: 'white', border: 'none' }}
+                style={{ padding: '8px 16px', minHeight: '38px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '9999px' }}
               >
                 Delete Member
               </button>
@@ -770,20 +606,21 @@ export default function SettingsPage({
         </div>
       )}
 
+      {/* Delete Category Confirmation Modal */}
       {deletingCategory && (
         <div className="overlay-backdrop" onClick={() => setDeletingCategory(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'scaleIn var(--transition-base) ease', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#FFFFFF', border: '1px solid #FFE4E6', borderRadius: '20px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
               ⚠️ Delete Category?
             </h3>
             
-            <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: '1.45', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              Are you sure you want to delete the <CategoryIcon categoryId={deletingCategory.id} emoji={deletingCategory.emoji} size={20} /> <strong style={{ color: 'var(--color-text)' }}>{deletingCategory.label}</strong> category?
+            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.45', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Are you sure you want to delete the <CategoryIcon categoryId={deletingCategory.id} emoji={deletingCategory.emoji} size={20} /> <strong style={{ color: '#0F172A' }}>{deletingCategory.label}</strong> category?
             </p>
 
-            <div style={{ background: 'rgba(108, 92, 231, 0.05)', border: '1px solid rgba(108, 92, 231, 0.15)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                Any tasks currently belonging to this category will automatically be moved to the default <strong>📋 Other</strong> category so they aren't lost. This action is permanent.
+            <div style={{ background: '#FFF1F2', border: '1px solid #FECDD3', padding: '12px 14px', borderRadius: '12px' }}>
+              <p style={{ fontSize: '12px', color: '#E11D48', margin: 0, lineHeight: 1.4 }}>
+                Any tasks currently belonging to this category will automatically be moved to the default <strong>📋 Other</strong> category so they aren't lost.
               </p>
             </div>
 
@@ -792,7 +629,7 @@ export default function SettingsPage({
                 className="btn btn-secondary" 
                 onClick={() => setDeletingCategory(null)} 
                 type="button" 
-                style={{ padding: '8px 16px', minHeight: '38px' }}
+                style={{ padding: '8px 16px', minHeight: '38px', borderRadius: '9999px' }}
               >
                 Cancel
               </button>
@@ -803,7 +640,7 @@ export default function SettingsPage({
                   setDeletingCategory(null);
                 }} 
                 type="button" 
-                style={{ padding: '8px 16px', minHeight: '38px', background: 'var(--color-danger)', color: 'white', border: 'none' }}
+                style={{ padding: '8px 16px', minHeight: '38px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '9999px' }}
               >
                 Delete Category
               </button>
@@ -811,8 +648,21 @@ export default function SettingsPage({
           </div>
         </div>
       )}
-      <div style={{ textAlign: 'center', marginTop: '32px', fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.7, paddingBottom: '24px' }}>
-        VisibleWork v2.5.2 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+
+      {/* ── 4. Account & Navigation Footer ── */}
+      <footer className="settings__account-footer">
+        <h3 className="settings__account-title">Account</h3>
+        <button
+          type="button"
+          className="settings__signout-btn"
+          onClick={onSignOut}
+        >
+          Sign Out
+        </button>
+      </footer>
+
+      <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: '#94A3B8', opacity: 0.8, paddingBottom: '24px' }}>
+        VisibleWork v2.6.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

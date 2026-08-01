@@ -517,6 +517,7 @@ function App() {
             user={cashoutUser_}
             onConfirm={handleCashout}
             onCancel={() => setCashoutUser(null)}
+            onUndoCompletion={handleUndoCompletion}
           />
         )}
 

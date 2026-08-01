@@ -1,6 +1,7 @@
 import React from 'react';
 import { rrulestr } from 'rrule';
 import { getTaskBaseCost } from '../data/pricing';
+import { getDoerName } from '../data/scheduler';
 import './TaskCard.css';
 
 function getRecurrenceLabel(task) {
@@ -14,7 +15,7 @@ function getRecurrenceLabel(task) {
     try {
       const rule = rrulestr(rruleString);
       return rule.toText();
-    } catch (e) {
+    } catch {
       return 'Recurring task';
     }
   }
@@ -28,19 +29,6 @@ function getRecurrenceLabel(task) {
     return `Every ${rec.fixedIntervalValue} ${rec.fixedIntervalUnit}`;
   }
   return 'Recurring task';
-}
-
-export function getDoerName(task, users = []) {
-  if (!task || !task.lastCompletedBy) return '';
-  const raw = String(task.lastCompletedBy);
-  const idsOrNames = raw.split(',').map(s => s.trim()).filter(Boolean);
-
-  const resolvedNames = idsOrNames.map(idOrName => {
-    const user = (users || []).find(u => u.id === idOrName);
-    return user ? user.name : idOrName;
-  });
-
-  return resolvedNames.join(', ');
 }
 
 function getLastCompletedText(task, users = []) {
@@ -63,10 +51,10 @@ function getLastCompletedText(task, users = []) {
     const doer = getDoerName(task, users);
     const bySuffix = doer ? ` by ${doer}` : '';
     
-    if (diffDays === 0) return `Last completed: Today${bySuffix}`;
+    if (diffDays <= 0) return `Last completed: Today${bySuffix}`;
     if (diffDays === 1) return `Last completed: Yesterday${bySuffix}`;
     return `Last completed: ${diffDays} days ago${bySuffix}`;
-  } catch (e) {
+  } catch {
     return '';
   }
 }

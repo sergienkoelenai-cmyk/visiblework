@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from './Avatar';
 import IconBadge from './IconBadge';
-import {
-  getTaskBaseCost,
-  calculateFinalReward,
-} from '../data/pricing';
+import { calculateFinalReward } from '../data/pricing';
 import { isStandardRecurringTask } from '../data/scheduler';
 import './TaskCompletionOverlay.css';
 

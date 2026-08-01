@@ -1,48 +1,8 @@
 import React from 'react';
 import { getTaskBaseCost } from '../data/pricing';
+import { getLastCompletedRelativeText } from '../data/scheduler';
 import IconBadge from './IconBadge';
 import './FavoriteTaskCard.css';
-
-export function getDoerName(task, users = []) {
-  if (!task || !task.lastCompletedBy) return '';
-  const raw = String(task.lastCompletedBy);
-  const idsOrNames = raw.split(',').map(s => s.trim()).filter(Boolean);
-
-  const resolvedNames = idsOrNames.map(idOrName => {
-    const user = (users || []).find(u => u.id === idOrName);
-    return user ? user.name : idOrName;
-  });
-
-  return resolvedNames.join(', ');
-}
-
-export function getLastCompletedRelativeText(task, users = []) {
-  if (!task.lastCompletedAt) {
-    return 'Never';
-  }
-  try {
-    const date = task.lastCompletedAt.toDate
-      ? task.lastCompletedAt.toDate()
-      : new Date(task.lastCompletedAt.seconds ? task.lastCompletedAt.seconds * 1000 : task.lastCompletedAt);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const complDate = new Date(date);
-    complDate.setHours(0, 0, 0, 0);
-
-    const diffMs = today.getTime() - complDate.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-    const doer = getDoerName(task, users);
-    const bySuffix = doer ? ` by ${doer}` : '';
-
-    if (diffDays <= 0) return `Today${bySuffix}`;
-    if (diffDays === 1) return `Yesterday${bySuffix}`;
-    return `${diffDays} days ago${bySuffix}`;
-  } catch (e) {
-    return 'Never';
-  }
-}
 
 export default function FavoriteTaskCard({
   task,

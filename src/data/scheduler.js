@@ -61,7 +61,7 @@ export function toJsDate(val) {
     try {
       const d = val.toDate();
       return isNaN(d.getTime()) ? null : d;
-    } catch (e) {
+    } catch {
       // fallback
     }
   }
@@ -86,6 +86,52 @@ export function toJsDate(val) {
   return null;
 }
 
+/**
+ * Helper to get doer name(s) from a task object.
+ */
+export function getDoerName(task, users = []) {
+  if (!task || !task.lastCompletedBy) return '';
+  const raw = String(task.lastCompletedBy);
+  const idsOrNames = raw.split(',').map((s) => s.trim()).filter(Boolean);
+
+  const resolvedNames = idsOrNames.map((idOrName) => {
+    const user = (users || []).find((u) => u.id === idOrName);
+    return user ? user.name : idOrName;
+  });
+
+  return resolvedNames.join(', ');
+}
+
+/**
+ * Format relative text for last completion date.
+ */
+export function getLastCompletedRelativeText(task, users = []) {
+  if (!task || !task.lastCompletedAt) {
+    return 'Never';
+  }
+  try {
+    const date = toJsDate(task.lastCompletedAt);
+    if (!date) return 'Never';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const complDate = new Date(date);
+    complDate.setHours(0, 0, 0, 0);
+
+    const diffMs = today.getTime() - complDate.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const doer = getDoerName(task, users);
+    const bySuffix = doer ? ` by ${doer}` : '';
+
+    if (diffDays <= 0) return `Today${bySuffix}`;
+    if (diffDays === 1) return `Yesterday${bySuffix}`;
+    return `${diffDays} days ago${bySuffix}`;
+  } catch {
+    return 'Never';
+  }
+}
+
 // ─── Core API ───────────────────────────────────────────────────────────────
 
 /**
@@ -96,6 +142,9 @@ export function toJsDate(val) {
  * @returns {Date|null}           Next due date, or null if the task is done.
  */
 export function calculateNextDueDate(task, completionDate) {
+  if (!task) return null;
+  const safeCompDate = toJsDate(completionDate) || new Date();
+
   if (task.type === 'always-available') {
     return startOfDay(new Date());
   }
@@ -124,7 +173,7 @@ export function calculateNextDueDate(task, completionDate) {
         : new Date(2020, 0, 1);
       const rule = rrulestr(rruleString, { dtstart: dtstartAnchor });
       // Ensure completionDate reference is set to end-of-day so RRule finds next occurrence on a FUTURE day.
-      const compDateRef = new Date(completionDate);
+      const compDateRef = new Date(safeCompDate);
       compDateRef.setHours(23, 59, 59, 999);
       const next = rule.after(compDateRef);
       return next ? startOfDay(next) : null;

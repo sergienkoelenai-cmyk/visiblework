@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import TaskCard from './TaskCard';
 import FavoriteTaskCard from './FavoriteTaskCard';
 import { CategoryIcon } from './IconBadge';
 import './TaskList.css';

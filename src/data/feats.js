@@ -70,7 +70,7 @@ export function getRecurrenceIntervalDays(task) {
       if (freq === 0 || String(freq) === '0') return interval * 365;
       if (freq === 2 || String(freq) === '2') return interval * 7;
       if (freq === 3 || String(freq) === '3') return interval;
-    } catch (e) {
+    } catch {
       const str = String(rruleString).toUpperCase();
       if (str.includes('FREQ=MONTHLY') || str.includes('FREQ=YEARLY')) return 30;
       if (str.includes('FREQ=WEEKLY')) {
