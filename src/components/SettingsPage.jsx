@@ -123,6 +123,13 @@ export default function SettingsPage({
     setCatError('');
   };
 
+  // Search state in Settings
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = React.useRef(null);
+
+  const cleanSearchQuery = searchQuery.trim().toLowerCase();
+
   return (
     <div className="settings settings--warm">
       {/* Top Header */}
@@ -131,8 +138,62 @@ export default function SettingsPage({
           ← Back
         </button>
         <h1 className="settings__title">Settings</h1>
-        <div className="settings__header-spacer" />
+        <button
+          type="button"
+          className={`settings__search-btn ${isSearchOpen ? 'settings__search-btn--active' : ''}`}
+          onClick={() => {
+            setIsSearchOpen((prev) => {
+              const next = !prev;
+              if (next) {
+                setTimeout(() => searchInputRef.current?.focus(), 100);
+              } else {
+                setSearchQuery('');
+              }
+              return next;
+            });
+          }}
+          title="Search tasks in settings"
+        >
+          🔍
+        </button>
       </header>
+
+      {/* Expandable Search Input Bar */}
+      {isSearchOpen && (
+        <div className="settings__search-bar">
+          <div className="settings__search-input-wrapper">
+            <span className="settings__search-icon">🔍</span>
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="settings__search-input"
+              placeholder="Search tasks, categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="settings__search-clear-btn"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className="settings__search-cancel-btn"
+            onClick={() => {
+              setIsSearchOpen(false);
+              setSearchQuery('');
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* ── Tasks Section ── */}
       <section className="settings__section">
@@ -152,11 +213,27 @@ export default function SettingsPage({
         {/* Task Category Accordion Cards */}
         <div className="settings__tasks-categories">
           {categories.map((cat) => {
-            const catTasks = tasks.filter((t) => {
+            const rawCatTasks = tasks.filter((t) => {
               if (t.isActive === false) return false;
               if (t.type === 'recurring' && !t.nextDueDate && t.lastCompletedAt) return false;
               return (t.category || 'other') === cat.id;
             });
+
+            const catTasks = cleanSearchQuery
+              ? rawCatTasks.filter((t) => {
+                  const titleMatch = (t.title || '').toLowerCase().includes(cleanSearchQuery);
+                  const descMatch = (t.description || t.notes || '').toLowerCase().includes(cleanSearchQuery);
+                  const catMatch = (cat.label || '').toLowerCase().includes(cleanSearchQuery);
+                  return titleMatch || descMatch || catMatch;
+                })
+              : rawCatTasks;
+
+            // If searching and this category has no matching tasks, skip rendering
+            if (cleanSearchQuery && catTasks.length === 0) {
+              return null;
+            }
+
+            const isCardExpanded = cleanSearchQuery ? true : !!expandedTaskCats[cat.id];
 
             return (
               <CategorySettingCard
@@ -165,7 +242,7 @@ export default function SettingsPage({
                 tasks={catTasks}
                 baseRate={baseRate}
                 complexityMultipliers={complexityMultipliers}
-                isExpanded={!!expandedTaskCats[cat.id]}
+                isExpanded={isCardExpanded}
                 onToggleExpand={toggleTaskCat}
                 onEditTask={onEditTask}
                 onDeleteTask={onDeleteTask}
@@ -181,6 +258,7 @@ export default function SettingsPage({
           categories={categories}
           baseRate={baseRate}
           complexityMultipliers={complexityMultipliers}
+          searchQuery={searchQuery}
           onEditTask={onEditTask}
           onDeleteTask={onDeleteTask}
         />
@@ -662,7 +740,7 @@ export default function SettingsPage({
       </footer>
 
       <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: '#94A3B8', opacity: 0.8, paddingBottom: '24px' }}>
-        VisibleWork v2.7.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.7.2 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );

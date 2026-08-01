@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.2  | Add real-time task search to Settings screen: expandable header search bar, auto-focus, real-time category task filtering & auto-expanding cards, and search filtering in ArchivedTasksSection |
 | v2.7.1  | Fix CSS syntax bug: restore missing closing brace on @keyframes toastSlideUp in App.css, resolving app-wide CSS parsing truncation and styling breakage |
 | v2.7.0  | Master Home Screen Search with Multi-Pool Coverage: Header 🔍 trigger button, expandable auto-focus search bar, useTaskSearch multi-pool hook, origin badges (🔥 Feat Pool, ⭐ Favorite, 📁 Category), and direct completion action |
 | v2.6.3  | Home Screen Bottom Section & Footer Polish: White floating cards for Categories and Upcoming Tasks, 44px min-height touch targets, subtle uppercase section labels, and HomeFooter anchor |
