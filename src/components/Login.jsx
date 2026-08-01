@@ -38,7 +38,7 @@ export default function Login() {
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-card__logo">
           <img src="/favicon.svg" alt="" className="login-card__logo-icon" />
-          <span className="login-card__logo-text">VisibleWork</span>
+          <span className="login-card__logo-text">Visible Work</span>
         </div>
 
         <h1 className="login-card__title">Welcome, Family!</h1>

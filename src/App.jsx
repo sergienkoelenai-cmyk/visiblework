@@ -445,7 +445,7 @@ function App() {
         fontWeight: 600,
         fontFamily: 'var(--font-family)',
       }}>
-        Loading VisibleWork...
+        Loading Visible Work...
       </div>
     )
   }
@@ -468,6 +468,7 @@ function App() {
             onEditTask={handleEditTask}
             onRevertCompletion={handleRevertCompletion}
             onPeriodChange={handleAnalyticsPeriodChange}
+            onOpenSettings={() => setPage('settings')}
             onBack={() => setPage('dashboard')}
           />
 
@@ -555,7 +556,7 @@ function App() {
         <div className="app-header">
           <div className="app-logo">
             <img src="/favicon.svg" alt="" className="app-logo-icon" />
-            <span className="app-logo-text">VisibleWork</span>
+            <span className="app-logo-text">Visible Work</span>
           </div>
           <div className="app-header-actions">
             <button
@@ -703,7 +704,7 @@ function App() {
             )}
 
             {/* End-of-Scroll Footer Anchor */}
-            <HomeFooter version="v2.7.2" />
+            <HomeFooter version="v2.7.4" />
           </>
         )}
       </main>

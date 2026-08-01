@@ -12,6 +12,7 @@ export default function AnalyticsPage({
   complexityMultipliers = null,
   onEditTask,
   onPeriodChange,
+  onOpenSettings,
   onBack,
 }) {
   const [currentDate, setCurrentDate] = useState(() => {
@@ -20,6 +21,11 @@ export default function AnalyticsPage({
   });
 
   const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const selectedUser = useMemo(() => {
+    if (!selectedUserId) return null;
+    return users.find((u) => u.id === selectedUserId) || null;
+  }, [users, selectedUserId]);
 
   // Month and year label
   const periodLabel = useMemo(() => {
@@ -87,25 +93,31 @@ export default function AnalyticsPage({
     return Object.values(earnings).sort((a, b) => b.amount - a.amount);
   }, [users, completions]);
 
-  // Total earned in period
-  const totalEarned = useMemo(() => {
-    return completions.reduce((sum, c) => sum + (c.amount || 0), 0);
-  }, [completions]);
+  // Filter completions for selected user (if any)
+  const filteredCompletionsForBanner = useMemo(() => {
+    if (!selectedUserId) return completions;
+    return completions.filter((c) => c.userId === selectedUserId);
+  }, [completions, selectedUserId]);
 
-  // Total aggregated effort time in period
+  // Total earned in period (recalculated for selected user)
+  const totalEarned = useMemo(() => {
+    return filteredCompletionsForBanner.reduce((sum, c) => sum + (c.amount || 0), 0);
+  }, [filteredCompletionsForBanner]);
+
+  // Total aggregated effort time in period (recalculated for selected user)
   const totalMinutes = useMemo(() => {
     const taskMap = {};
     tasks.forEach((t) => {
       if (t.id) taskMap[t.id] = t;
     });
 
-    return completions.reduce((sum, c) => {
+    return filteredCompletionsForBanner.reduce((sum, c) => {
       const task = c.taskId ? taskMap[c.taskId] : null;
       const baseMins = task ? getTaskDurationMinutes(task) : 0;
       const mult = (c.multiplier !== null && c.multiplier !== undefined) ? Number(c.multiplier) : 1.0;
       return sum + (baseMins * mult);
     }, 0);
-  }, [completions, tasks]);
+  }, [filteredCompletionsForBanner, tasks]);
 
   // Formatted YYYY-MM for input type="month"
   const monthInputValue = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -115,14 +127,21 @@ export default function AnalyticsPage({
       {/* ── Header ── */}
       <header className="analytics__header">
         <button
-          className="btn btn-secondary analytics__back"
+          className="analytics__back-pill"
           onClick={onBack}
           type="button"
         >
-          ⬅️ Back
+          ← Back
         </button>
         <h1 className="analytics__title">Analytics</h1>
-        <div style={{ width: '80px' }} className="analytics__header-spacer" />
+        <button
+          className="analytics__settings-btn"
+          onClick={onOpenSettings}
+          title="Settings"
+          type="button"
+        >
+          ⚙️
+        </button>
       </header>
 
       {/* ── Period Selector (Pill Shape) ── */}
@@ -174,7 +193,9 @@ export default function AnalyticsPage({
             </span>
           </div>
         </div>
-        <span className="analytics__total-sub">in {periodLabel}</span>
+        <span className="analytics__total-sub">
+          {selectedUser ? `for ${selectedUser.name} in ${periodLabel}` : `in ${periodLabel}`}
+        </span>
       </section>
 
       {/* ── Earnings by Person (Compact Summary Row) ── */}

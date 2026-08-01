@@ -19,6 +19,8 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.4  | Styled Analytics screen Back button as sky-blue soft pill [ ← Back ] matching Settings screen design, and renamed app title everywhere to 'Visible Work' |
+| v2.7.3  | Analytics refinement: remove task-level 'Edit Task' button, add ⚙️ Settings icon to Analytics header, and dynamically recalculate TOTAL PAYOUT & TOTAL TIME banner per selected family member |
 | v2.7.2  | Add real-time task search to Settings screen: expandable header search bar, auto-focus, real-time category task filtering & auto-expanding cards, and search filtering in ArchivedTasksSection |
 | v2.7.1  | Fix CSS syntax bug: restore missing closing brace on @keyframes toastSlideUp in App.css, resolving app-wide CSS parsing truncation and styling breakage |
 | v2.7.0  | Master Home Screen Search with Multi-Pool Coverage: Header 🔍 trigger button, expandable auto-focus search bar, useTaskSearch multi-pool hook, origin badges (🔥 Feat Pool, ⭐ Favorite, 📁 Category), and direct completion action |

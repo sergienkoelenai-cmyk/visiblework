@@ -27,11 +27,51 @@
   letter-spacing: -0.02em;
 }
 
-.analytics__back {
-  padding: 6px 16px;
-  min-height: 40px;
+.analytics__back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  border: 1px solid #BAE6FD;
+  background: #FFFFFF;
+  color: #0284C7;
+  font-weight: 600;
   font-size: 14px;
-  border-radius: 999px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(56, 189, 248, 0.08);
+}
+
+.analytics__back-pill:hover {
+  background: #F0F9FF;
+  color: #0369A1;
+  border-color: #38BDF8;
+  transform: translateY(-1px);
+}
+
+.analytics__settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid #BAE6FD;
+  background: #FFFFFF;
+  color: #0284C7;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(56, 189, 248, 0.08);
+}
+
+.analytics__settings-btn:hover {
+  background: #F0F9FF;
+  border-color: #38BDF8;
+  transform: translateY(-1px);
 }
 
 /* Period Selector Section (Compact Pill Shape) */

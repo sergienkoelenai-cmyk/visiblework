@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'VisibleWork — Family Task Manager',
-        short_name: 'VisibleWork',
+        name: 'Visible Work — Family Task Manager',
+        short_name: 'Visible Work',
         description: 'Household task management for the whole family',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
