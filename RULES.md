@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.5  | Master Home Screen Lime Accent System & Bottom Layout Polish: Unified signature Lime palette (#84CC16 / #F7FEE7 / #F4FCE3 / #4D7C0F), rounded floating cards (#FFFFFF, 20px radius, subtle border #ECFDF5), 44px category touch rows, warm ochre prices (#D97706), and HomeFooter clearance |
 | v2.7.4  | Styled Analytics screen Back button as sky-blue soft pill [ ← Back ] matching Settings screen design, and renamed app title everywhere to 'Visible Work' |
 | v2.7.3  | Analytics refinement: remove task-level 'Edit Task' button, add ⚙️ Settings icon to Analytics header, and dynamically recalculate TOTAL PAYOUT & TOTAL TIME banner per selected family member |
 | v2.7.2  | Add real-time task search to Settings screen: expandable header search bar, auto-focus, real-time category task filtering & auto-expanding cards, and search filtering in ArchivedTasksSection |
