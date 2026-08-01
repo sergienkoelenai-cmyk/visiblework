@@ -25,7 +25,16 @@
 }
 
 .task-list__section-label--favorite {
-  color: #D97706;
+  color: #4D7C0F;
+}
+
+/* ── Favourites Dashboard Card ── */
+.fav-section__card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #F4FCE3;
+  padding: 4px 16px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03);
 }
 
 /* ── Floating White Card Containers ── */
