@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.6.3  | Home Screen Bottom Section & Footer Polish: White floating cards for Categories and Upcoming Tasks, 44px min-height touch targets, subtle uppercase section labels, and HomeFooter anchor |
 | v2.6.2  | Collapsed ArchivedTasks section by default, renamed button to 'Edit', removed price from archived items, and ensured user completions/rewards are preserved when tasks are deleted |
 | v2.6.1  | Fix ArchivedTasks filter logic: strictly exclude active recurring tasks from archive, showing only completed one-off tasks and recurring tasks that reached their END date |
 | v2.6.0  | Master Settings Overhaul & Archive: Warm Coral design system, CategorySettingCard accordions, ArchivedTasksSection (60-day auto-cleanup & Edit/Restore mechanics), and bottom Account Sign Out section |

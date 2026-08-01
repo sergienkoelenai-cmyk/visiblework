@@ -40,6 +40,7 @@ import FeatsWidget from './components/FeatsWidget'
 import FeatsDrawer from './components/FeatsDrawer'
 import CriticalFocusBlock from './components/CriticalFocusBlock'
 import OneOffTaskSelectionModal from './components/OneOffTaskSelectionModal'
+import HomeFooter from './components/HomeFooter'
 import { getTaskAllowInFeats } from './data/feats'
 
 import { onAuthStateChanged, signOut } from 'firebase/auth'
@@ -595,15 +596,33 @@ function App() {
         />
 
         <section className="dashboard-section">
-          <TaskList tasks={todayTasks} users={users} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} showFavorites />
+          <TaskList
+            tasks={todayTasks}
+            users={users}
+            categories={categories}
+            baseRate={settings.base_rate ?? 0.10}
+            complexityMultipliers={settings.complexity_multipliers}
+            onCompleteTask={handleCompleteTask}
+            showFavorites
+          />
         </section>
 
-        <section className="dashboard-section">
-          <h2 className="section-title">Upcoming tasks</h2>
-          <TaskList tasks={upcomingTasks} users={users} categories={categories} baseRate={settings.base_rate ?? 0.10} complexityMultipliers={settings.complexity_multipliers} onCompleteTask={handleCompleteTask} />
-        </section>
+        {upcomingTasks.length > 0 && (
+          <section className="dashboard-section">
+            <TaskList
+              tasks={upcomingTasks}
+              users={users}
+              categories={categories}
+              baseRate={settings.base_rate ?? 0.10}
+              complexityMultipliers={settings.complexity_multipliers}
+              onCompleteTask={handleCompleteTask}
+              sectionLabel="UPCOMING TASKS"
+            />
+          </section>
+        )}
 
-        {/* Full task list removed */}
+        {/* End-of-Scroll Footer Anchor */}
+        <HomeFooter version="v2.6.3" />
       </main>
 
       {/* --- Toast Notification Banner --- */}

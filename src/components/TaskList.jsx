@@ -3,17 +3,26 @@ import FavoriteTaskCard from './FavoriteTaskCard';
 import { CategoryIcon } from './IconBadge';
 import './TaskList.css';
 
-export default function TaskList({ tasks = [], users = [], categories = [], baseRate = 0.10, complexityMultipliers = null, onCompleteTask, showFavorites = false }) {
+export default function TaskList({
+  tasks = [],
+  users = [],
+  categories = [],
+  baseRate = 0.10,
+  complexityMultipliers = null,
+  onCompleteTask,
+  showFavorites = false,
+  sectionLabel = null,
+}) {
   // All categories start collapsed
   const [expandedCats, setExpandedCats] = useState({});
 
   const toggleCategory = (catId) => {
-    setExpandedCats(prev => ({ ...prev, [catId]: !prev[catId] }));
+    setExpandedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
   };
 
   // Separate favorites
-  const favoriteTasks = showFavorites ? tasks.filter(t => t.isFavorite) : [];
-  const regularTasks = showFavorites ? tasks.filter(t => !t.isFavorite) : tasks;
+  const favoriteTasks = showFavorites ? tasks.filter((t) => t.isFavorite) : [];
+  const regularTasks = showFavorites ? tasks.filter((t) => !t.isFavorite) : tasks;
 
   // Group regular tasks by category ID
   const groupedTasks = useMemo(() => {
@@ -26,14 +35,29 @@ export default function TaskList({ tasks = [], users = [], categories = [], base
       groups[catId].push(task);
     });
     return groups;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, showFavorites]);
+  }, [regularTasks]);
 
   // Helper to find category details
-  const getCategoryDetails = (categoryId) => {
-    const cat = categories.find(c => c.id === categoryId);
+  const getCategoryDetails = React.useCallback((categoryId) => {
+    const cat = categories.find((c) => c.id === categoryId);
     return cat || { label: categoryId, emoji: '📋' };
-  };
+  }, [categories]);
+
+  // Filter categories that actually have regular tasks
+  const activeCategoryList = useMemo(() => {
+    const list = categories.filter((cat) => (groupedTasks[cat.id] || []).length > 0);
+
+    // Also include any non-predefined categories with tasks
+    Object.entries(groupedTasks).forEach(([catId, catTasks]) => {
+      const isPredefined = categories.some((c) => c.id === catId);
+      if (!isPredefined && catTasks.length > 0) {
+        const details = getCategoryDetails(catId);
+        list.push({ id: catId, ...details });
+      }
+    });
+
+    return list;
+  }, [categories, groupedTasks, getCategoryDetails]);
 
   // Empty state
   if (tasks.length === 0) {
@@ -48,58 +72,15 @@ export default function TaskList({ tasks = [], users = [], categories = [], base
     );
   }
 
-  const renderCategorySection = (cat, catTasks) => {
-    if (catTasks.length === 0) return null;
-    const isExpanded = expandedCats[cat.id] ?? false;
-
-    return (
-      <section key={cat.id} className="task-list__group">
-        <h3
-          className="task-list__group-label"
-          onClick={() => toggleCategory(cat.id)}
-        >
-          <span
-            className="task-list__chevron"
-            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
-          >
-            ▶
-          </span>
-          <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={16} />
-          {cat.label}
-          <span className="task-list__group-count">{catTasks.length}</span>
-        </h3>
-
-        {isExpanded && (
-          <div className="task-list__cards">
-            {catTasks.map((task) => (
-              <FavoriteTaskCard
-                key={task.id}
-                task={{ ...task, categoryEmoji: cat.emoji }}
-                users={users}
-                baseRate={baseRate}
-                complexityMultipliers={complexityMultipliers}
-                onComplete={onCompleteTask}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-    );
-  };
-
   return (
     <div className="task-list">
       {/* ── Favorites Section ── */}
       {favoriteTasks.length > 0 && (
-        <section className="task-list__favorites">
-          <h3 className="task-list__group-label" style={{ color: 'var(--color-warning, #f0b429)' }}>
-            <span>⭐</span>
-            Favorites
-            <span className="task-list__group-count" style={{ background: 'rgba(240,180,41,0.12)', color: 'var(--color-warning, #f0b429)' }}>
-              {favoriteTasks.length}
-            </span>
-          </h3>
-          <div className="task-list__cards">
+        <section className="task-list__section">
+          <span className="task-list__section-label task-list__section-label--favorite">
+            ⭐ FAVORITES
+          </span>
+          <div className="task-list__cards task-list__cards--favorites">
             {favoriteTasks.map((task) => {
               const catDetails = getCategoryDetails(task.category || 'other');
               return (
@@ -117,20 +98,71 @@ export default function TaskList({ tasks = [], users = [], categories = [], base
         </section>
       )}
 
-      {/* ── Categorized Sections (collapsed by default) ── */}
-      {categories.map((cat) => {
-        const catTasks = groupedTasks[cat.id] || [];
-        return renderCategorySection(cat, catTasks);
-      })}
+      {/* ── Categories Accordion Card Container ── */}
+      {activeCategoryList.length > 0 && (
+        <section className="task-list__section">
+          {sectionLabel ? (
+            <span className="task-list__section-label">{sectionLabel}</span>
+          ) : (
+            showFavorites && favoriteTasks.length > 0 && (
+              <span className="task-list__section-label">CATEGORIES</span>
+            )
+          )}
 
-      {/* Render tasks in categories not predefined in categories prop, if any */}
-      {Object.entries(groupedTasks).map(([catId, catTasks]) => {
-        const isPredefined = categories.some(c => c.id === catId);
-        if (isPredefined || catTasks.length === 0) return null;
+          <div className="task-list__categories-card">
+            {activeCategoryList.map((cat) => {
+              const catTasks = groupedTasks[cat.id] || [];
+              const isExpanded = expandedCats[cat.id] ?? false;
 
-        const catDetails = getCategoryDetails(catId);
-        return renderCategorySection({ id: catId, ...catDetails }, catTasks);
-      })}
+              return (
+                <div key={cat.id} className="task-list__category-item">
+                  <div
+                    className={`task-list__category-header ${isExpanded ? 'task-list__category-header--expanded' : ''}`}
+                    onClick={() => toggleCategory(cat.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCategory(cat.id);
+                      }
+                    }}
+                  >
+                    <div className="task-list__category-left">
+                      <span
+                        className={`task-list__chevron ${isExpanded ? 'task-list__chevron--open' : ''}`}
+                      >
+                        ▸
+                      </span>
+                      <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={18} />
+                      <span className="task-list__category-title">{cat.label}</span>
+                    </div>
+
+                    <div className="task-list__category-right">
+                      <span className="task-list__category-count">{catTasks.length}</span>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="task-list__cards task-list__cards--category">
+                      {catTasks.map((task) => (
+                        <FavoriteTaskCard
+                          key={task.id}
+                          task={{ ...task, categoryEmoji: cat.emoji }}
+                          users={users}
+                          baseRate={baseRate}
+                          complexityMultipliers={complexityMultipliers}
+                          onComplete={onCompleteTask}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
