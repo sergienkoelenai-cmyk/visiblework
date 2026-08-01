@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.6.1  | Fix ArchivedTasks filter logic: strictly exclude active recurring tasks from archive, showing only completed one-off tasks and recurring tasks that reached their END date |
 | v2.6.0  | Master Settings Overhaul & Archive: Warm Coral design system, CategorySettingCard accordions, ArchivedTasksSection (60-day auto-cleanup & Edit/Restore mechanics), and bottom Account Sign Out section |
 | v2.5.3  | Code audit & quality refactor: safe completionDate conversion in scheduler, missing onUndoCompletion handler in Settings view, category validation feedback, and clean helper exports |
 | v2.5.2  | Frameless categories and framed expanded task container in Settings screen (matching Home screen style); PWA skipWaiting update |
