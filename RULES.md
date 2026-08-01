@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.1  | Fix CSS syntax bug: restore missing closing brace on @keyframes toastSlideUp in App.css, resolving app-wide CSS parsing truncation and styling breakage |
 | v2.7.0  | Master Home Screen Search with Multi-Pool Coverage: Header 🔍 trigger button, expandable auto-focus search bar, useTaskSearch multi-pool hook, origin badges (🔥 Feat Pool, ⭐ Favorite, 📁 Category), and direct completion action |
 | v2.6.3  | Home Screen Bottom Section & Footer Polish: White floating cards for Categories and Upcoming Tasks, 44px min-height touch targets, subtle uppercase section labels, and HomeFooter anchor |
 | v2.6.2  | Collapsed ArchivedTasks section by default, renamed button to 'Edit', removed price from archived items, and ensured user completions/rewards are preserved when tasks are deleted |

@@ -29,6 +29,7 @@
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
 
 /* ── Expandable Search Bar ── */
 .app-search-bar {
@@ -113,4 +114,3 @@
   background: #FFF1F2 !important;
   color: #E11D48 !important;
 }
-

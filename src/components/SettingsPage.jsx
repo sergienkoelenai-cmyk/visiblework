@@ -662,7 +662,7 @@ export default function SettingsPage({
       </footer>
 
       <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: '#94A3B8', opacity: 0.8, paddingBottom: '24px' }}>
-        VisibleWork v2.7.0 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
+        VisibleWork v2.7.1 • Built: {import.meta.env.VITE_BUILD_TIME || 'Development'}
       </div>
     </div>
   );
