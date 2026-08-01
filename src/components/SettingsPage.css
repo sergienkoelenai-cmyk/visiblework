@@ -322,19 +322,23 @@
 .csc-body {
   display: flex;
   flex-direction: column;
-  padding: 8px 12px 14px 14px;
-  gap: 12px;
+  padding: 12px 14px 14px 14px;
+  gap: 8px;
   border: none;
-  border-left: 2.5px solid #FB7185;
   background: #F8FAFC;
   border-radius: 12px;
-  margin: 4px 14px 14px 18px;
+  margin: 4px 14px 14px 14px;
 }
 
 .csc-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 16px;
+}
+
+.csc-group:last-of-type {
+  margin-bottom: 4px;
 }
 
 .csc-group-title {
@@ -343,21 +347,24 @@
   color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 6px 0 2px 0;
+  padding: 4px 0 2px 0;
 }
 
 .csc-task-list {
   display: flex;
   flex-direction: column;
+  border-left: 3px solid #F43F5E;
+  padding-left: 10px;
+  margin-left: 4px;
 }
 
 .csc-task-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid #F8FAFC;
+  border-bottom: 1px solid #F1F5F9;
 }
 
 .csc-task-row:last-child {
@@ -377,22 +384,27 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .csc-task-title {
   font-size: 14px;
   font-weight: 500;
   color: #0F172A;
-  white-space: nowrap;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
 }
 
 .csc-task-star {
   font-size: 13px;
+  margin-right: 4px;
+  display: inline;
 }
 
 .csc-task-recurrence {
@@ -409,7 +421,7 @@
 .csc-task-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
