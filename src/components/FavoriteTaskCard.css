@@ -100,6 +100,49 @@
   transform: scale(0.95);
 }
 
+/* ── Nested Sub-Task Item Styling ── */
+.favorite-card--nested {
+  padding: 8px 10px;
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.favorite-card--nested:hover {
+  background: rgba(132, 204, 22, 0.08);
+}
+
+.favorite-card--nested .favorite-card__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0F172A;
+}
+
+.favorite-card--nested .favorite-card__last-completed {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.favorite-card--nested .favorite-card__price {
+  font-size: 12px;
+  font-weight: 700;
+  color: #D97706;
+  background: #FEF3C7;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid #FDE68A;
+}
+
+.favorite-card__bullet {
+  font-size: 16px;
+  font-weight: 800;
+  color: #84CC16;
+  margin-right: 2px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  line-height: 1;
+}
+
 /* ── Mobile (iPhone 13 Mini) ── */
 @media (max-width: 480px) {
   .favorite-card {

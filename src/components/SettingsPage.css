@@ -278,8 +278,8 @@
 }
 
 .csc-category-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: #0F172A;
   white-space: nowrap;
   overflow: hidden;
@@ -301,31 +301,34 @@
   height: 22px;
   padding: 0 8px;
   border-radius: 9999px;
-  background: #F1F5F9;
+  background: #F4FCE3;
   font-size: 12px;
-  font-weight: 600;
-  color: #64748B;
+  font-weight: 700;
+  color: #4D7C0F;
 }
 
 .csc-chevron {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 700;
   color: #94A3B8;
-  transition: transform 0.2s ease;
+  transition: color 0.15s ease;
 }
 
 .csc-chevron--open {
-  transform: rotate(180deg);
   color: #FB7185;
 }
 
-/* Expanded Accordion Body */
+/* Expanded Accordion Body — Inset Nested Container */
 .csc-body {
   display: flex;
   flex-direction: column;
-  padding: 4px 18px 16px 18px;
-  gap: 14px;
-  border-top: 1px solid #FFF1F2;
-  background: #FFFFFF;
+  padding: 8px 12px 14px 14px;
+  gap: 12px;
+  border: none;
+  border-left: 2.5px solid #FB7185;
+  background: #F8FAFC;
+  border-radius: 12px;
+  margin: 4px 14px 14px 18px;
 }
 
 .csc-group {
@@ -378,7 +381,7 @@
 
 .csc-task-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #0F172A;
   white-space: nowrap;
   overflow: hidden;

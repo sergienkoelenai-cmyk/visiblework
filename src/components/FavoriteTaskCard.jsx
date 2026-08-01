@@ -10,8 +10,9 @@ export default function FavoriteTaskCard({
   baseRate = 0.10,
   complexityMultipliers = null,
   onComplete,
+  isNested = false,
 }) {
-  const icon = task.icon || task.categoryEmoji || '📋';
+  const icon = task.icon || (isNested ? null : task.categoryEmoji);
   const price = getTaskBaseCost(task, baseRate, complexityMultipliers);
   const relativeCompleted = getLastCompletedRelativeText(task, users);
 
@@ -22,19 +23,23 @@ export default function FavoriteTaskCard({
 
   return (
     <div
-      className="favorite-card"
+      className={`favorite-card ${isNested ? 'favorite-card--nested' : ''}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
     >
-      {/* Left Icon — always show user emoji inside styled badge */}
-      <IconBadge
-        emoji={icon}
-        emojiOnly
-        size={34}
-        iconSize={17}
-        className="favorite-card__icon"
-      />
+      {/* Left Icon — task-specific icon or subtle bullet indicator */}
+      {icon ? (
+        <IconBadge
+          emoji={icon}
+          emojiOnly
+          size={isNested ? 26 : 34}
+          iconSize={isNested ? 14 : 17}
+          className="favorite-card__icon"
+        />
+      ) : (
+        <span className="favorite-card__bullet">•</span>
+      )}
 
       {/* Middle Details */}
       <div className="favorite-card__details">

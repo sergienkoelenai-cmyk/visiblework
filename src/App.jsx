@@ -704,7 +704,7 @@ function App() {
             )}
 
             {/* End-of-Scroll Footer Anchor */}
-            <HomeFooter version="v2.7.5" />
+            <HomeFooter version="v2.7.6" />
           </>
         )}
       </main>

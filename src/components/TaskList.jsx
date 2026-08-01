@@ -132,9 +132,9 @@ export default function TaskList({
                       <span
                         className={`task-list__chevron ${isExpanded ? 'task-list__chevron--open' : ''}`}
                       >
-                        ▸
+                        {isExpanded ? '▾' : '▸'}
                       </span>
-                      <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={18} />
+                      <CategoryIcon categoryId={cat.id} emoji={cat.emoji} size={20} />
                       <span className="task-list__category-title">{cat.label}</span>
                     </div>
 
@@ -153,6 +153,7 @@ export default function TaskList({
                           baseRate={baseRate}
                           complexityMultipliers={complexityMultipliers}
                           onComplete={onCompleteTask}
+                          isNested
                         />
                       ))}
                     </div>

@@ -19,6 +19,7 @@ Use **semantic versioning** (`MAJOR.MINOR.PATCH`):
 ### Version history
 | Version | Change |
 |---------|--------|
+| v2.7.6  | Category Accordion Visual Hierarchy & Sub-task Nesting: bold 16px/700 parent headers, ▾/▸ chevrons, lime count badges (#F4FCE3/#4D7C0F) on Home, coral (#FB7185) on Settings; inset nested containers with left border guide line (BEF264 lime / FB7185 coral), F8FAFC fill; FavoriteTaskCard isNested prop with 14px/500 title, compact gold reward pill (#FEF3C7/#D97706) |
 | v2.7.5  | Master Home Screen Lime Accent System & Bottom Layout Polish: Unified signature Lime palette (#84CC16 / #F7FEE7 / #F4FCE3 / #4D7C0F), rounded floating cards (#FFFFFF, 20px radius, subtle border #ECFDF5), 44px category touch rows, warm ochre prices (#D97706), and HomeFooter clearance |
 | v2.7.4  | Styled Analytics screen Back button as sky-blue soft pill [ ← Back ] matching Settings screen design, and renamed app title everywhere to 'Visible Work' |
 | v2.7.3  | Analytics refinement: remove task-level 'Edit Task' button, add ⚙️ Settings icon to Analytics header, and dynamically recalculate TOTAL PAYOUT & TOTAL TIME banner per selected family member |
