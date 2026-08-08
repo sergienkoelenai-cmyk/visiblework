@@ -1,0 +1,1 @@
+Fix personal task scope filtering across Critical Focus, Feats, Search, and Task Lists

@@ -74,8 +74,6 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const searchInputRef = useRef(null)
 
-  const searchResults = useTaskSearch(searchQuery, tasks, categories)
-
   // Modal states
   const [completingTask, setCompletingTask] = useState(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -250,6 +248,21 @@ function App() {
     }
   }, [page, currentUser])
 
+  const isTaskVisibleForUser = useCallback((t, userId) => {
+    if (!t) return false;
+    if (t.scope === 'personal') {
+      const owner = t.ownerId || t.createdBy;
+      return owner ? owner === userId : true;
+    }
+    return true;
+  }, []);
+
+  const userTasks = useMemo(() => {
+    return tasks.filter((t) => isTaskVisibleForUser(t, activeUserId));
+  }, [tasks, activeUserId, isTaskVisibleForUser]);
+
+  const searchResults = useTaskSearch(searchQuery, userTasks, categories)
+
   // --- Derived data ---
   // Date boundaries for dashboard sections
   const now = new Date();
@@ -259,7 +272,7 @@ function App() {
   threeDaysFromNow.setHours(23,59,59,999);
 
   // Active tasks (enforcing strict scheduled task visibility: due today or overdue)
-  const activeTasks = tasks.filter(t => {
+  const activeTasks = userTasks.filter(t => {
     if (!t.isActive) return false;
     return shouldDisplayScheduledTask(t, now);
   });
@@ -275,7 +288,7 @@ function App() {
 
   const todayTasks = tasksWithStatus.filter(t => !getTaskAllowInFeats(t) && shouldDisplayScheduledTask(t, now));
 
-  const upcomingTasks = tasks.filter(t => {
+  const upcomingTasks = userTasks.filter(t => {
     if (!t.isActive || t.type === 'always-available' || t.type === 'ad-hoc') return false;
     if (getTaskAllowInFeats(t)) return false;
     if (!t.nextDueDate) return false;
@@ -334,14 +347,19 @@ function App() {
   }, [activeUserId, users])
 
   const handleSaveTask = useCallback(async (taskData) => {
+    const payload = {
+      ...taskData,
+      createdBy: taskData.createdBy || activeUserId,
+      ownerId: taskData.scope === 'personal' ? (taskData.ownerId || activeUserId) : '',
+    }
     if (editingTask && editingTask.id) {
-      await updateTask(editingTask.id, taskData)
+      await updateTask(editingTask.id, payload)
     } else {
-      await addTask(taskData)
+      await addTask(payload)
     }
     setShowTaskForm(false)
     setEditingTask(null)
-  }, [editingTask])
+  }, [editingTask, activeUserId])
 
   const handleUpdateSettings = useCallback(async (data) => {
     await updateSettings(data)
@@ -728,7 +746,7 @@ function App() {
 
             {/* Feats & Task Generator Widget */}
             <FeatsWidget
-              tasks={tasks}
+              tasks={userTasks}
               onOpenGenerator={() => setShowFeatsDrawer(true)}
               onOpenSelection={() => setShowOneOffSelectionModal(true)}
             />

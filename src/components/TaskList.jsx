@@ -34,7 +34,8 @@ export default function TaskList({
   // Helper: Is task visible to active user?
   const isTaskVisibleForUser = React.useCallback((t) => {
     if (t.scope === 'personal') {
-      return !t.ownerId || t.ownerId === activeUserId;
+      const owner = t.ownerId || t.createdBy;
+      return owner ? owner === activeUserId : true;
     }
     return true;
   }, [activeUserId]);
