@@ -1,1 +1,1 @@
-Rename Categories section header to AVAILABLE TASKS and hide completed/expired ad-hoc and completed on-time recurring tasks
+Display last completed date and author in condensed style (e.g. 👤 Lena • 2d ago) on Available Tasks cards

@@ -1,6 +1,6 @@
 import React from 'react';
 import { getTaskBaseCost } from '../data/pricing';
-import { getLastCompletedRelativeText, getTaskOwnerName } from '../data/scheduler';
+import { getCompactCompletedText, getTaskOwnerName } from '../data/scheduler';
 import IconBadge from './IconBadge';
 import './FavoriteTaskCard.css';
 
@@ -14,7 +14,7 @@ export default function FavoriteTaskCard({
 }) {
   const icon = task.icon || (isNested ? null : task.categoryEmoji);
   const price = getTaskBaseCost(task, baseRate, complexityMultipliers);
-  const relativeCompleted = getLastCompletedRelativeText(task, users);
+  const compactCompleted = getCompactCompletedText(task, users);
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -52,7 +52,7 @@ export default function FavoriteTaskCard({
           )}
         </span>
         <span className="favorite-card__last-completed">
-          Last completed: {relativeCompleted}
+          👤 {compactCompleted}
         </span>
       </div>
 

@@ -510,4 +510,47 @@ export function getTaskOwnerName(task, users = []) {
   return 'Personal';
 }
 
+/**
+ * Formats a compact last completed author & date label (e.g. "Lena • Today", "Alex • 2d ago", "Never").
+ */
+export function getCompactCompletedText(task, users = []) {
+  if (!task || !task.lastCompletedAt) {
+    return 'Never';
+  }
+  const date = toJsDate(task.lastCompletedAt);
+  if (!date || isNaN(date.getTime())) return 'Never';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+
+  let timeText = 'Today';
+  if (diff === 1) timeText = 'Yesterday';
+  else if (diff > 1) timeText = `${diff}d ago`;
+  else if (diff < 0) timeText = 'Today';
+
+  const doerId = task.lastCompletedBy;
+  const doer = Array.isArray(users)
+    ? users.find(
+        (u) =>
+          u &&
+          (u.id === doerId ||
+            (u.name && u.name.trim().toLowerCase() === String(doerId).trim().toLowerCase()))
+      )
+    : null;
+
+  const doerName = doer
+    ? doer.name
+    : typeof doerId === 'string' && !/^[a-zA-Z0-9]{15,}$/.test(doerId.trim())
+    ? doerId.trim()
+    : '';
+
+  if (doerName) {
+    return `${doerName} • ${timeText}`;
+  }
+  return timeText;
+}
+
 
