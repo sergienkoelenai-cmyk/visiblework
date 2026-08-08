@@ -1,1 +1,1 @@
-Fix initials evaluation safety and safe localStorage handling for startup
+Fix missing useMemo React import in App.jsx to restore application startup
