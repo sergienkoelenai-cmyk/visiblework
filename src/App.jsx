@@ -86,28 +86,56 @@ function App() {
   const [showOneOffSelectionModal, setShowOneOffSelectionModal] = useState(false)
   const [toastMessage, setToastMessage] = useState(null)
 
+  // --- Safe LocalStorage Helpers ---
+  const getSafeLocalStorage = (key, fallback = '') => {
+    try {
+      return localStorage.getItem(key) || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const setSafeLocalStorage = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  };
+
+  const getInitials = (name = '') =>
+    (name || '')
+      .trim()
+      .split(/\s+/)
+      .map((w) => (w && w[0] ? w[0] : ''))
+      .filter(Boolean)
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
+
   // --- Active Family Profile State ---
   const [activeUserId, setActiveUserId] = useState(() => {
-    return localStorage.getItem('visiblework_active_user_id') || ''
+    return getSafeLocalStorage('visiblework_active_user_id', '')
   })
   const [showProfileSwitcher, setShowProfileSwitcher] = useState(false)
 
   // Sync active user when users list updates
   useEffect(() => {
-    if (users.length > 0) {
-      const match = users.find((u) => u.id === activeUserId)
+    if (Array.isArray(users) && users.length > 0) {
+      const match = users.find((u) => u && u.id === activeUserId)
       if (!match) {
         setActiveUserId(users[0].id)
-        localStorage.setItem('visiblework_active_user_id', users[0].id)
+        setSafeLocalStorage('visiblework_active_user_id', users[0].id)
       }
     }
   }, [users, activeUserId])
 
-  const activeUser = users.find((u) => u.id === activeUserId) || users[0] || null
+  const activeUser = useMemo(() => {
+    if (!Array.isArray(users) || users.length === 0) return null;
+    return users.find((u) => u && u.id === activeUserId) || users[0] || null;
+  }, [users, activeUserId]);
 
   const handleSwitchUser = useCallback((userId) => {
     setActiveUserId(userId)
-    localStorage.setItem('visiblework_active_user_id', userId)
+    setSafeLocalStorage('visiblework_active_user_id', userId)
   }, [])
 
   // --- Auth subscription ---
@@ -623,7 +651,7 @@ function App() {
                     <img src={activeUser.avatar} alt={activeUser.name} className="active-profile-img" />
                   ) : (
                     <span className="active-profile-initials">
-                      {(activeUser.name || '?').slice(0, 2).toUpperCase()}
+                      {getInitials(activeUser.name)}
                     </span>
                   )}
                 </div>

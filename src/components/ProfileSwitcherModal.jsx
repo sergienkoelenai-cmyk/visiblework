@@ -9,7 +9,14 @@ export default function ProfileSwitcherModal({
   onOpenSettings,
 }) {
   const getInitials = (name = '') =>
-    name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+    (name || '')
+      .trim()
+      .split(/\s+/)
+      .map((w) => (w && w[0] ? w[0] : ''))
+      .filter(Boolean)
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
 
   return (
     <div className="profile-switcher-backdrop" onClick={onClose}>

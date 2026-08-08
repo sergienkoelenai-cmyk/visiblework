@@ -12,13 +12,15 @@ export default function Avatar({ user, size = 'md', showBalance, showName, onCli
   const px = SIZES[size] || SIZES.md;
   const fontSize = Math.max(px * 0.36, 12);
 
-  const initials = user.name
+  const initials = user?.name
     ? user.name
-        .split(' ')
-        .map((w) => w[0])
+        .trim()
+        .split(/\s+/)
+        .map((w) => (w && w[0] ? w[0] : ''))
+        .filter(Boolean)
         .join('')
         .toUpperCase()
-        .slice(0, 2)
+        .slice(0, 2) || '?'
     : '?';
 
   const borderColor = user.avatarColor || 'var(--color-accent)';
