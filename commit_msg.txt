@@ -1,1 +1,1 @@
-Display last completed date and author in condensed style (e.g. 👤 Lena • 2d ago) on Available Tasks cards
+Fix recurring task due date recalculation for monthly day-of-month tasks (e.g. Pay Rent & Pay Andria on 1st of month) when past due dates occur

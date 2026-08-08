@@ -195,12 +195,29 @@ function App() {
 
         if (!isMounted) return;
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         for (const task of tasks) {
           if (!task) continue;
-          if (task.recurrence || task.type === 'recurring') {
-            const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
-            const currentDue = toJsDate(task.nextDueDate);
 
+          const compDate = completionMap[task.id] || toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
+          const currentDue = toJsDate(task.nextDueDate);
+
+          // ── Handle Ad-Hoc tasks ──
+          if (task.type === 'ad-hoc') {
+            if (compDate && task.isActive !== false) {
+              console.log(`[Auto-Fix] Deactivating completed ad-hoc task "${task.title}"`);
+              await updateTask(task.id, {
+                lastCompletedAt: compDate,
+                isActive: false,
+              });
+            }
+            continue;
+          }
+
+          // ── Handle Recurring tasks ──
+          if (task.recurrence || task.type === 'recurring') {
             if (task.isActive === false) {
               // Task is inactive: check if it was mistakenly deactivated without completion
               if (!compDate) {
@@ -222,8 +239,8 @@ function App() {
               const compDay = new Date(compDate);
               compDay.setHours(0, 0, 0, 0);
 
-              // If nextDueDate is missing OR nextDueDate <= compDay (stale due date)
-              if (!currentDue || currentDue.getTime() <= compDay.getTime()) {
+              // If nextDueDate is missing OR nextDueDate <= compDay OR nextDueDate is in past
+              if (!currentDue || currentDue.getTime() <= compDay.getTime() || currentDue.getTime() < today.getTime()) {
                 const calculatedDate = calculateNextDueDate(task, compDate);
                 if (calculatedDate && !isNaN(calculatedDate.getTime())) {
                   console.log(`[Auto-Fix] Updating "${task.title}" nextDueDate to ${calculatedDate.toISOString()}`);
@@ -240,21 +257,15 @@ function App() {
                   });
                 }
               }
-            } else if (!currentDue) {
-              // Task has no completion date AND no nextDueDate: calculate initial due date
+            } else if (!currentDue || currentDue.getTime() < today.getTime()) {
+              // Task has no completion date AND (no nextDueDate or past nextDueDate): calculate next due date
               const created = toJsDate(task.created_at) || new Date();
-              const refDate = new Date(created.getTime() - 24 * 60 * 60 * 1000);
+              const refDate = currentDue || new Date(created.getTime() - 24 * 60 * 60 * 1000);
               const calculatedDate = calculateNextDueDate(task, refDate);
               if (calculatedDate && !isNaN(calculatedDate.getTime())) {
-                console.log(`[Auto-Fix] Setting initial nextDueDate for "${task.title}" to ${calculatedDate.toISOString()}`);
+                console.log(`[Auto-Fix] Setting updated nextDueDate for "${task.title}" to ${calculatedDate.toISOString()}`);
                 await updateTask(task.id, {
                   nextDueDate: calculatedDate
-                });
-              } else {
-                console.log(`[Auto-Fix] Deactivating task with no occurrences "${task.title}"`);
-                await updateTask(task.id, {
-                  nextDueDate: null,
-                  isActive: false
                 });
               }
             }

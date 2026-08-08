@@ -410,18 +410,20 @@ export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
 
   let dueDay = rawDue ? startOfDay(rawDue) : null;
 
-  // If task was completed or skipped
+  // Check last completion or skip event
   const lastEventDate = toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
-  if (lastEventDate) {
-    const compDay = startOfDay(lastEventDate);
+  
+  if (lastEventDate || (dueDay && dueDay < today)) {
+    const refDate = lastEventDate || dueDay;
+    const compDay = lastEventDate ? startOfDay(lastEventDate) : null;
 
-    // If task was completed TODAY or after/on dueDay
-    if (compDay >= today || (dueDay && dueDay <= compDay)) {
-      const nextDue = calculateNextDueDate(task, lastEventDate);
+    // If task was completed TODAY or on/after dueDay, or if dueDay is in the past:
+    if ((compDay && compDay >= today) || (dueDay && dueDay < today) || (compDay && dueDay && dueDay <= compDay)) {
+      const nextDue = calculateNextDueDate(task, refDate);
       if (nextDue && startOfDay(nextDue) > today) {
         dueDay = startOfDay(nextDue);
-      } else {
-        // Task completed today or recurrence schedule exhausted -> hide from today's active list
+      } else if (compDay && compDay >= today) {
+        // Task completed today and no future occurrence today -> hide from today's active list
         return false;
       }
     }
