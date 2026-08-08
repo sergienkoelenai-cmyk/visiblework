@@ -376,25 +376,52 @@ export function isTaskOverdue(task, currentDate = new Date()) {
  */
 export function shouldDisplayScheduledTask(task, currentDate = new Date()) {
   if (!task || task.isActive === false) return false;
-  if (task.type === 'always-available') return true;
-  if (task.type === 'ad-hoc') return true;
 
+  const today = startOfDay(currentDate);
+
+  // 1. Always-available tasks are always visible unless marked inactive
+  if (task.type === 'always-available') return true;
+
+  // 2. Ad-hoc (one-time) tasks
+  if (task.type === 'ad-hoc') {
+    // If ad-hoc task has been completed, hide it!
+    if (task.lastCompletedAt || task.completed || task.status === 'completed') {
+      return false;
+    }
+    // If ad-hoc task has a due/end date in the past, hide it!
+    const adHocDue = toJsDate(task.nextDueDate || task.dueDate || task.end_date);
+    if (adHocDue && startOfDay(adHocDue) < today) {
+      return false;
+    }
+    return true;
+  }
+
+  // 3. Check end_date / until date on recurrence
+  if (task.end_date || task.until) {
+    const endDate = toJsDate(task.end_date || task.until);
+    if (endDate && startOfDay(endDate) < today) {
+      return false; // Task end date reached!
+    }
+  }
+
+  // 4. Recurring scheduled tasks
   const rawDue = toJsDate(task.nextDueDate);
   if (!rawDue && !task.recurrence) return false;
 
-  const today = startOfDay(currentDate);
   let dueDay = rawDue ? startOfDay(rawDue) : null;
 
-  // If task was completed or skipped on or after dueDay, or if dueDay is missing/stale
+  // If task was completed or skipped
   const lastEventDate = toJsDate(task.lastCompletedAt) || toJsDate(task.lastSkippedAt);
   if (lastEventDate) {
     const compDay = startOfDay(lastEventDate);
-    if (!dueDay || dueDay <= compDay) {
+
+    // If task was completed TODAY or after/on dueDay
+    if (compDay >= today || (dueDay && dueDay <= compDay)) {
       const nextDue = calculateNextDueDate(task, lastEventDate);
-      if (nextDue) {
+      if (nextDue && startOfDay(nextDue) > today) {
         dueDay = startOfDay(nextDue);
       } else {
-        // Recurrence schedule is exhausted (met end date)! Hide task.
+        // Task completed today or recurrence schedule exhausted -> hide from today's active list
         return false;
       }
     }

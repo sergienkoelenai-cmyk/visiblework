@@ -1,1 +1,1 @@
-Use getTaskOwnerName helper for personal task chips and remove chevron arrow from active user balance pill
+Rename Categories section header to AVAILABLE TASKS and hide completed/expired ad-hoc and completed on-time recurring tasks

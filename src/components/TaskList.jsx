@@ -126,13 +126,9 @@ export default function TaskList({
       {/* ── Categories Accordion Card Container ── */}
       {activeCategoryList.length > 0 && (
         <section className="task-list__section">
-          {sectionLabel ? (
-            <span className="task-list__section-label">{sectionLabel}</span>
-          ) : (
-            showFavorites && favoriteTasks.length > 0 && (
-              <span className="task-list__section-label">CATEGORIES</span>
-            )
-          )}
+          <span className="task-list__section-label">
+            {sectionLabel || 'AVAILABLE TASKS'}
+          </span>
 
           <div className="task-list__categories-card">
             {activeCategoryList.map((cat) => {
