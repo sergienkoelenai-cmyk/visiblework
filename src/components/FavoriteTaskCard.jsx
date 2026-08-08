@@ -47,9 +47,10 @@ export default function FavoriteTaskCard({
           {task.title}
           {task.scope === 'personal' && (() => {
             const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
+            const ownerName = ownerUser ? ownerUser.name : (task.createdBy || 'Personal');
             return (
               <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                👤 {ownerUser ? ownerUser.name : 'Personal'}
+                👤 {ownerName}
               </span>
             );
           })()}

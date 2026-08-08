@@ -749,7 +749,6 @@ function App() {
                 <span className="app-active-account-balance-val">
                   €{typeof activeUser.balance === 'number' ? activeUser.balance.toFixed(2) : '0.00'}
                 </span>
-                <span className="app-active-account-chevron">▾</span>
               </div>
             </button>
           </div>

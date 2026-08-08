@@ -1,1 +1,1 @@
-Update header with Active Account Selector Card showing avatar, name, and balance, and display owner name on personal task badges
+Display owner name on personal task chips and remove tiny chevron arrow from active account balance pill

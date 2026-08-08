@@ -58,7 +58,6 @@ export default function CategorySettingCard({
   const renderTaskRow = (task) => {
     const emoji = task.icon || category.emoji || '📋';
     const cost = getTaskBaseCost(task, baseRate, complexityMultipliers);
-    const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
 
     return (
       <div
@@ -88,11 +87,15 @@ export default function CategorySettingCard({
                 <span className="csc-task-star">⭐</span>
               )}
               {task.title}
-              {task.scope === 'personal' && (
-                <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-                  👤 {ownerUser ? ownerUser.name : 'Personal'}
-                </span>
-              )}
+              {task.scope === 'personal' && (() => {
+                const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
+                const ownerName = ownerUser ? ownerUser.name : (task.createdBy || 'Personal');
+                return (
+                  <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                    👤 {ownerName}
+                  </span>
+                );
+              })()}
             </div>
             <span className="csc-task-recurrence">{getRecurrenceLabel(task)}</span>
           </div>
