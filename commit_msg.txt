@@ -1,1 +1,1 @@
-Display owner name on personal task chips and remove tiny chevron arrow from active account balance pill
+Use getTaskOwnerName helper for personal task chips and remove chevron arrow from active user balance pill

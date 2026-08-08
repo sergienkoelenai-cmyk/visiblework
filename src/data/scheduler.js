@@ -447,4 +447,40 @@ export function isStandardRecurringTask(task) {
   return str.includes('FREQ=DAILY') || str.includes('FREQ=WEEKLY') || str.includes('FREQ=MONTHLY');
 }
 
+/**
+ * Resolves the owner's human name for a personal task,
+ * correctly matching user IDs or legacy names against the users list.
+ * Fallbacks to 'Personal' if no user name is resolved.
+ */
+export function getTaskOwnerName(task, users = []) {
+  if (!task) return 'Personal';
+  const ownerRef = task.ownerId || task.createdBy;
+  if (!ownerRef) return 'Personal';
+
+  // 1. Search users list by ID or Name (case-insensitive match)
+  const matchedUser = Array.isArray(users)
+    ? users.find(
+        (u) =>
+          u &&
+          (u.id === ownerRef ||
+            (u.name && u.name.trim().toLowerCase() === String(ownerRef).trim().toLowerCase()))
+      )
+    : null;
+
+  if (matchedUser && matchedUser.name) {
+    return matchedUser.name;
+  }
+
+  // 2. Check if ownerRef is NOT a raw Firestore auto-ID (20+ alphanumeric chars without spaces)
+  if (typeof ownerRef === 'string') {
+    const trimmed = ownerRef.trim();
+    const isRawDbId = /^[a-zA-Z0-9]{15,}$/.test(trimmed);
+    if (!isRawDbId && trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+
+  return 'Personal';
+}
+
 

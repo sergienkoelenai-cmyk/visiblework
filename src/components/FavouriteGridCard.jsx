@@ -1,6 +1,6 @@
 import React from 'react';
 import { getTaskBaseCost } from '../data/pricing';
-import { toJsDate } from '../data/scheduler';
+import { toJsDate, getTaskOwnerName } from '../data/scheduler';
 import './FavouriteGridCard.css';
 
 // Compact relative time: "Today", "Yesterday", "3d ago"
@@ -57,15 +57,11 @@ export default function FavouriteGridCard({
       {/* ── Row 1: inline emoji + full title ── */}
       <p className="fav-grid-card__title">
         {titleWithEmoji}
-        {task.scope === 'personal' && (() => {
-          const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
-          const ownerName = ownerUser ? ownerUser.name : (task.createdBy || 'Personal');
-          return (
-            <span style={{ marginLeft: '4px', fontSize: '9px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-              👤 {ownerName}
-            </span>
-          );
-        })()}
+        {task.scope === 'personal' && (
+          <span style={{ marginLeft: '4px', fontSize: '9px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+            👤 {getTaskOwnerName(task, users)}
+          </span>
+        )}
       </p>
 
       {/* ── Row 2: meta (left) + price (right) ── */}

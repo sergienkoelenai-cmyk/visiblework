@@ -1,6 +1,7 @@
 import React from 'react';
 import IconBadge, { CategoryIcon } from './IconBadge';
 import { getTaskBaseCost } from '../data/pricing';
+import { getTaskOwnerName } from '../data/scheduler';
 import { rrulestr } from 'rrule';
 
 function getRecurrenceLabel(task) {
@@ -87,15 +88,11 @@ export default function CategorySettingCard({
                 <span className="csc-task-star">⭐</span>
               )}
               {task.title}
-              {task.scope === 'personal' && (() => {
-                const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
-                const ownerName = ownerUser ? ownerUser.name : (task.createdBy || 'Personal');
-                return (
-                  <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-                    👤 {ownerName}
-                  </span>
-                );
-              })()}
+              {task.scope === 'personal' && (
+                <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                  👤 {getTaskOwnerName(task, users)}
+                </span>
+              )}
             </div>
             <span className="csc-task-recurrence">{getRecurrenceLabel(task)}</span>
           </div>
