@@ -28,7 +28,6 @@ import {
   toggleTaskFavorite,
 } from './data/store'
 import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate, shouldDisplayScheduledTask, formatNextDueDateLabel, toJsDate } from './data/scheduler'
-import FamilyBar from './components/FamilyBar'
 import TaskList from './components/TaskList'
 import TaskForm from './components/TaskForm'
 import UserForm from './components/UserForm'
@@ -504,10 +503,6 @@ function App() {
     setCashoutUser(null)
   }, [])
 
-  const handleUserClick = useCallback((user) => {
-    setCashoutUser(user)
-  }, [])
-
   // --- Render ---
   if (authLoading) {
     return (
@@ -636,29 +631,6 @@ function App() {
           <div className="app-logo">
             <img src="/favicon.svg" alt="" className="app-logo-icon" />
             <span className="app-logo-text">Visible Work</span>
-            {activeUser && (
-              <button
-                type="button"
-                className="active-profile-header-btn"
-                onClick={() => setShowProfileSwitcher(true)}
-                title="Switch active family profile"
-              >
-                <div
-                  className="active-profile-avatar"
-                  style={{ background: activeUser.avatarColor || '#6366f1' }}
-                >
-                  {activeUser.avatar ? (
-                    <img src={activeUser.avatar} alt={activeUser.name} className="active-profile-img" />
-                  ) : (
-                    <span className="active-profile-initials">
-                      {getInitials(activeUser.name)}
-                    </span>
-                  )}
-                </div>
-                <span className="active-profile-name">{activeUser.name}</span>
-                <span className="active-profile-chevron">▾</span>
-              </button>
-            )}
           </div>
           <div className="app-header-actions">
             <button
@@ -744,7 +716,44 @@ function App() {
           </div>
         )}
 
-        <FamilyBar users={users} activeUserId={activeUserId} onUserClick={handleUserClick} onSwitchUser={handleSwitchUser} />
+        {/* Active Account Selector Card (replaces row of all family chips) */}
+        {activeUser && (
+          <div className="app-account-selector-bar">
+            <button
+              type="button"
+              className="app-active-account-card"
+              onClick={() => setShowProfileSwitcher(true)}
+              title="Click to switch active family profile"
+            >
+              <div
+                className="app-active-account-avatar"
+                style={{ background: activeUser.avatarColor || '#6366f1' }}
+              >
+                {activeUser.avatar ? (
+                  <img src={activeUser.avatar} alt={activeUser.name} className="app-active-account-img" />
+                ) : (
+                  <span className="app-active-account-initials">
+                    {getInitials(activeUser.name)}
+                  </span>
+                )}
+              </div>
+
+              <div className="app-active-account-info">
+                <span className="app-active-account-name">
+                  {activeUser.name} <span className="app-active-account-dot">✨</span>
+                </span>
+                <span className="app-active-account-sub">Active Profile</span>
+              </div>
+
+              <div className="app-active-account-balance-pill">
+                <span className="app-active-account-balance-val">
+                  €{typeof activeUser.balance === 'number' ? activeUser.balance.toFixed(2) : '0.00'}
+                </span>
+                <span className="app-active-account-chevron">▾</span>
+              </div>
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Dashboard */}

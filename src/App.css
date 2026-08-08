@@ -115,59 +115,120 @@
   color: #E11D48 !important;
 }
 
-/* Active profile trigger button in header */
-.active-profile-header-btn {
-  display: inline-flex;
+/* ── Header Account Selector Card (replaces top FamilyBar chips) ── */
+.app-account-selector-bar {
+  width: 100%;
+  padding-top: 4px;
+  display: flex;
+  justify-content: center;
+}
+
+.app-active-account-card {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 10px 0 4px;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px 8px 10px;
   background: #F7FEE7;
   border: 1.5px solid #84CC16;
-  border-radius: 9999px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(132, 204, 22, 0.12);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
-  margin-left: 8px;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.active-profile-header-btn:hover {
-  background: #ECFDF5;
+.app-active-account-card:hover {
+  background: #FFFFFF;
+  border-color: #65A30D;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(132, 204, 22, 0.25);
+  box-shadow: 0 4px 14px rgba(132, 204, 22, 0.2);
 }
 
-.active-profile-avatar {
-  width: 26px;
-  height: 26px;
+.app-active-account-card:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(132, 204, 22, 0.12);
+}
+
+.app-active-account-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-.active-profile-img {
+.app-active-account-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.active-profile-initials {
-  font-size: 10px;
+.app-active-account-initials {
+  font-size: 13px;
   font-weight: 800;
   color: #FFFFFF;
 }
 
-.active-profile-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #365314;
-  white-space: nowrap;
+.app-active-account-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  gap: 1px;
+  overflow: hidden;
 }
 
-.active-profile-chevron {
+.app-active-account-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1E293B;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.app-active-account-dot {
   font-size: 12px;
+  margin-left: 2px;
+}
+
+.app-active-account-sub {
+  font-size: 11px;
+  font-weight: 600;
   color: #4D7C0F;
+  line-height: 1;
+}
+
+.app-active-account-balance-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  padding: 5px 12px 5px 12px;
+  border-radius: 9999px;
+  border: 1.5px solid #F59E0B;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.12);
+  flex-shrink: 0;
+}
+
+.app-active-account-balance-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #D97706;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.app-active-account-chevron {
+  font-size: 12px;
+  color: #64748B;
+  margin-left: 2px;
 }

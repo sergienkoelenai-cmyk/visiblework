@@ -57,11 +57,14 @@ export default function FavouriteGridCard({
       {/* ── Row 1: inline emoji + full title ── */}
       <p className="fav-grid-card__title">
         {titleWithEmoji}
-        {task.scope === 'personal' && (
-          <span style={{ marginLeft: '4px', fontSize: '9px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>
-            👤 Personal
-          </span>
-        )}
+        {task.scope === 'personal' && (() => {
+          const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
+          return (
+            <span style={{ marginLeft: '4px', fontSize: '9px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+              👤 {ownerUser ? ownerUser.name : 'Personal'}
+            </span>
+          );
+        })()}
       </p>
 
       {/* ── Row 2: meta (left) + price (right) ── */}

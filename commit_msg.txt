@@ -1,1 +1,1 @@
-Fix missing useMemo React import in App.jsx to restore application startup
+Update header with Active Account Selector Card showing avatar, name, and balance, and display owner name on personal task badges

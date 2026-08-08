@@ -37,6 +37,7 @@ function getRecurrenceLabel(task) {
 export default function CategorySettingCard({
   category,
   tasks = [],
+  users = [],
   baseRate = 0.10,
   complexityMultipliers = null,
   isExpanded = false,
@@ -57,6 +58,7 @@ export default function CategorySettingCard({
   const renderTaskRow = (task) => {
     const emoji = task.icon || category.emoji || '📋';
     const cost = getTaskBaseCost(task, baseRate, complexityMultipliers);
+    const ownerUser = users.find((u) => u.id === (task.ownerId || task.createdBy));
 
     return (
       <div
@@ -88,7 +90,7 @@ export default function CategorySettingCard({
               {task.title}
               {task.scope === 'personal' && (
                 <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-                  👤 Personal
+                  👤 {ownerUser ? ownerUser.name : 'Personal'}
                 </span>
               )}
             </div>
