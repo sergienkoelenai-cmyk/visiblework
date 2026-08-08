@@ -1,7 +1,7 @@
 import React from 'react';
 import IconBadge, { CategoryIcon } from './IconBadge';
 import { getTaskBaseCost } from '../data/pricing';
-import { getTaskOwnerName } from '../data/scheduler';
+import { getTaskOwnerName, toJsDate } from '../data/scheduler';
 import { rrulestr } from 'rrule';
 
 function getRecurrenceLabel(task) {
@@ -33,6 +33,44 @@ function getRecurrenceLabel(task) {
     return 'Custom schedule';
   }
   return 'Recurring';
+}
+
+function formatLastCompleted(task, users = []) {
+  if (!task || !task.lastCompletedAt) return 'Never';
+  const date = toJsDate(task.lastCompletedAt);
+  if (!date || isNaN(date.getTime())) return 'Never';
+
+  const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const doerId = task.lastCompletedBy;
+  const doer = Array.isArray(users)
+    ? users.find(
+        (u) =>
+          u &&
+          (u.id === doerId ||
+            (u.name && u.name.trim().toLowerCase() === String(doerId).trim().toLowerCase()))
+      )
+    : null;
+
+  const doerName = doer
+    ? doer.name
+    : typeof doerId === 'string' && !/^[a-zA-Z0-9]{15,}$/.test(doerId.trim())
+    ? doerId.trim()
+    : '';
+
+  return doerName ? `${doerName} • ${dateStr}` : dateStr;
+}
+
+function formatNextDueDate(task) {
+  if (!task) return 'None';
+  if (task.type === 'always-available') return 'Always active';
+  if (task.type === 'ad-hoc') {
+    const due = toJsDate(task.nextDueDate || task.dueDate || task.end_date);
+    return due ? due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'One-time';
+  }
+  if (!task.nextDueDate) return 'None';
+  const due = toJsDate(task.nextDueDate);
+  if (!due || isNaN(due.getTime())) return 'None';
+  return due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function CategorySettingCard({
@@ -94,7 +132,18 @@ export default function CategorySettingCard({
                 </span>
               )}
             </div>
-            <span className="csc-task-recurrence">{getRecurrenceLabel(task)}</span>
+
+            <div className="csc-task-meta-list">
+              <span className="csc-task-meta-badge" title="Schedule">
+                🗓️ <span className="csc-meta-label">Schedule:</span> {getRecurrenceLabel(task)}
+              </span>
+              <span className="csc-task-meta-badge" title="Last completion">
+                ✔️ <span className="csc-meta-label">Last:</span> {formatLastCompleted(task, users)}
+              </span>
+              <span className="csc-task-meta-badge" title="Next due date">
+                📅 <span className="csc-meta-label">Next due:</span> {formatNextDueDate(task)}
+              </span>
+            </div>
           </div>
         </div>
 

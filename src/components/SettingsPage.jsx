@@ -240,6 +240,7 @@ export default function SettingsPage({
                 key={cat.id}
                 category={cat}
                 tasks={catTasks}
+                users={users}
                 baseRate={baseRate}
                 complexityMultipliers={complexityMultipliers}
                 isExpanded={isCardExpanded}

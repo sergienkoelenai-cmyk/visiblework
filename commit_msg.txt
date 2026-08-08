@@ -1,1 +1,1 @@
-Fix recurring task due date recalculation for monthly day-of-month tasks (e.g. Pay Rent & Pay Andria on 1st of month) when past due dates occur
+Add schedule, last completion date with author, and next due date metadata badges to active tasks in Settings page

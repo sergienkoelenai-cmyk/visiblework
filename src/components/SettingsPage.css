@@ -418,15 +418,30 @@
   display: inline;
 }
 
-.csc-task-recurrence {
+.csc-task-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.csc-task-meta-badge {
   font-size: 11px;
   font-weight: 500;
-  color: #64748B;
+  color: #334155;
   background: #F1F5F9;
-  padding: 1px 8px;
-  border-radius: 9999px;
-  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   white-space: nowrap;
+}
+
+.csc-meta-label {
+  font-weight: 700;
+  color: #64748B;
 }
 
 .csc-task-right {
