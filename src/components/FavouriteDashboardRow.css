@@ -1,0 +1,175 @@
+/* ── FavouriteDashboardRow — Full-visibility lime-themed favourite row ── */
+
+.fav-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease;
+  border-radius: 10px;
+}
+
+.fav-row:hover {
+  background: #F7FEE7;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.fav-row:active {
+  background: #ECFDF5;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ── Left Icon / Bullet ── */
+
+.fav-row__icon {
+  flex-shrink: 0;
+}
+
+.fav-row__bullet {
+  font-size: 18px;
+  font-weight: 800;
+  color: #84CC16;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* ── Middle: Title + Meta ── */
+
+.fav-row__details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fav-row__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.35;
+  /* Full multi-line wrapping — no truncation */
+  white-space: normal;
+  word-break: break-word;
+}
+
+.fav-row__meta {
+  display: inline-flex;
+  align-items: center;
+  background: #F7FEE7;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #3F6212;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  align-self: flex-start;
+}
+
+/* ── Right: Price + Check ── */
+
+.fav-row__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.fav-row__price {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 3px 8px;
+  background: #FEF3C7;
+  color: #D97706;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: 1px solid #FDE68A;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.fav-row__check-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #84CC16;
+  background: transparent;
+  color: #84CC16;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+.fav-row__check-btn:hover {
+  background: #84CC16;
+  color: #FFFFFF;
+  transform: scale(1.1);
+  box-shadow: 0 3px 12px rgba(132, 204, 22, 0.35);
+}
+
+.fav-row__check-btn:active {
+  transform: scale(0.94);
+  background: #65A30D;
+  border-color: #65A30D;
+  color: #FFFFFF;
+}
+
+/* ── Row dividers inside favorites card ── */
+
+.fav-section__card .fav-row:not(:last-child) {
+  border-bottom: 1px solid #F7FEE7;
+  border-radius: 0;
+  padding-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.fav-section__card .fav-row:not(:last-child):hover {
+  border-bottom-color: transparent;
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 480px) {
+  .fav-row {
+    gap: 8px;
+    padding: 9px 0;
+  }
+
+  .fav-row__title {
+    font-size: 13px;
+  }
+
+  .fav-row__meta {
+    font-size: 10px;
+  }
+
+  .fav-row__price {
+    font-size: 12px;
+    min-width: 46px;
+  }
+
+  .fav-row__check-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}

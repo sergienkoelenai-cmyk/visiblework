@@ -25,6 +25,7 @@ import {
   getCategories,
   uploadAvatar,
   updateSettings,
+  toggleTaskFavorite,
 } from './data/store'
 import { sortTasksByUrgency, getTaskStatus, calculateNextDueDate, shouldDisplayScheduledTask, formatNextDueDateLabel, toJsDate } from './data/scheduler'
 import FamilyBar from './components/FamilyBar'
@@ -33,6 +34,7 @@ import TaskForm from './components/TaskForm'
 import UserForm from './components/UserForm'
 import CashoutDialog from './components/CashoutDialog'
 import TaskCompletionOverlay from './components/TaskCompletionOverlay'
+import ProfileSwitcherModal from './components/ProfileSwitcherModal'
 import SettingsPage from './components/SettingsPage'
 import AnalyticsPage from './components/AnalyticsPage'
 import PullToRefresh from './components/PullToRefresh'
@@ -85,6 +87,30 @@ function App() {
   const [showFeatsDrawer, setShowFeatsDrawer] = useState(false)
   const [showOneOffSelectionModal, setShowOneOffSelectionModal] = useState(false)
   const [toastMessage, setToastMessage] = useState(null)
+
+  // --- Active Family Profile State ---
+  const [activeUserId, setActiveUserId] = useState(() => {
+    return localStorage.getItem('visiblework_active_user_id') || ''
+  })
+  const [showProfileSwitcher, setShowProfileSwitcher] = useState(false)
+
+  // Sync active user when users list updates
+  useEffect(() => {
+    if (users.length > 0) {
+      const match = users.find((u) => u.id === activeUserId)
+      if (!match) {
+        setActiveUserId(users[0].id)
+        localStorage.setItem('visiblework_active_user_id', users[0].id)
+      }
+    }
+  }, [users, activeUserId])
+
+  const activeUser = users.find((u) => u.id === activeUserId) || users[0] || null
+
+  const handleSwitchUser = useCallback((userId) => {
+    setActiveUserId(userId)
+    localStorage.setItem('visiblework_active_user_id', userId)
+  }, [])
 
   // --- Auth subscription ---
   useEffect(() => {
@@ -296,11 +322,16 @@ function App() {
 
   const handleToggleFavorite = useCallback(async (taskId, isFavorite) => {
     try {
-      await updateTask(taskId, { isFavorite })
+      const targetUser = activeUserId || (users[0] ? users[0].id : '')
+      if (targetUser) {
+        await toggleTaskFavorite(taskId, targetUser, isFavorite)
+      } else {
+        await updateTask(taskId, { isFavorite })
+      }
     } catch (err) {
       console.error('Failed to toggle favorite:', err)
     }
-  }, [])
+  }, [activeUserId, users])
 
   const handleSaveTask = useCallback(async (taskData) => {
     if (editingTask && editingTask.id) {
@@ -480,6 +511,7 @@ function App() {
               complexityMultipliers={settings.complexity_multipliers}
               mode={taskFormMode}
               onSave={handleSaveTask}
+              onDelete={handleDeleteTask}
               onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
             />
           )}
@@ -540,6 +572,7 @@ function App() {
             complexityMultipliers={settings.complexity_multipliers}
             mode={taskFormMode}
             onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
             onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
           />
         )}
@@ -557,6 +590,29 @@ function App() {
           <div className="app-logo">
             <img src="/favicon.svg" alt="" className="app-logo-icon" />
             <span className="app-logo-text">Visible Work</span>
+            {activeUser && (
+              <button
+                type="button"
+                className="active-profile-header-btn"
+                onClick={() => setShowProfileSwitcher(true)}
+                title="Switch active family profile"
+              >
+                <div
+                  className="active-profile-avatar"
+                  style={{ background: activeUser.avatarColor || '#6366f1' }}
+                >
+                  {activeUser.avatar ? (
+                    <img src={activeUser.avatar} alt={activeUser.name} className="active-profile-img" />
+                  ) : (
+                    <span className="active-profile-initials">
+                      {(activeUser.name || '?').slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <span className="active-profile-name">{activeUser.name}</span>
+                <span className="active-profile-chevron">▾</span>
+              </button>
+            )}
           </div>
           <div className="app-header-actions">
             <button
@@ -642,7 +698,7 @@ function App() {
           </div>
         )}
 
-        <FamilyBar users={users} onUserClick={handleUserClick} />
+        <FamilyBar users={users} activeUserId={activeUserId} onUserClick={handleUserClick} onSwitchUser={handleSwitchUser} />
       </header>
 
       {/* Main Dashboard */}
@@ -682,6 +738,7 @@ function App() {
                 tasks={todayTasks}
                 users={users}
                 categories={categories}
+                activeUserId={activeUserId}
                 baseRate={settings.base_rate ?? 0.10}
                 complexityMultipliers={settings.complexity_multipliers}
                 onCompleteTask={handleCompleteTask}
@@ -695,6 +752,7 @@ function App() {
                   tasks={upcomingTasks}
                   users={users}
                   categories={categories}
+                  activeUserId={activeUserId}
                   baseRate={settings.base_rate ?? 0.10}
                   complexityMultipliers={settings.complexity_multipliers}
                   onCompleteTask={handleCompleteTask}
@@ -704,7 +762,7 @@ function App() {
             )}
 
             {/* End-of-Scroll Footer Anchor */}
-            <HomeFooter version="v2.8.0" />
+            <HomeFooter version="v2.9.0" />
           </>
         )}
       </main>
@@ -718,10 +776,21 @@ function App() {
 
       {/* --- Modals / Overlays --- */}
 
+      {showProfileSwitcher && (
+        <ProfileSwitcherModal
+          users={users}
+          activeUserId={activeUserId}
+          onSelectUser={handleSwitchUser}
+          onClose={() => setShowProfileSwitcher(false)}
+          onOpenSettings={() => setPage('settings')}
+        />
+      )}
+
       {completingTask && (
         <TaskCompletionOverlay
           task={completingTask}
           users={users}
+          activeUserId={activeUserId}
           baseRate={settings.base_rate ?? 0.10}
           complexityMultipliers={settings.complexity_multipliers}
           onConfirm={handleConfirmCompletion}
@@ -741,7 +810,9 @@ function App() {
           baseRate={settings.base_rate ?? 0.10}
           complexityMultipliers={settings.complexity_multipliers}
           mode={taskFormMode}
+          activeUser={activeUser}
           onSave={handleSaveTask}
+          onDelete={handleDeleteTask}
           onCancel={() => { setShowTaskForm(false); setEditingTask(null) }}
         />
       )}

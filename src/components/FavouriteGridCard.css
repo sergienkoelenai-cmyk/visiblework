@@ -1,0 +1,96 @@
+/* ── FavouriteGridCard — Uniform-height tiles with lime border ── */
+
+.fav-grid-card {
+  width: calc(50% - 3px);
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border: 1px solid #E6F4D7;
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  min-height: 72px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.12s ease, transform 0.1s ease, box-shadow 0.12s ease;
+}
+
+.fav-grid-card:hover {
+  background: #F7FEE7;
+  transform: scale(1.015);
+  box-shadow: 0 3px 12px rgba(132, 204, 22, 0.14);
+}
+
+.fav-grid-card:active {
+  background: #ECFDF5;
+  transform: scale(0.97);
+}
+
+/* ── Row 1: title with inline emoji (2-line clamp) ── */
+
+.fav-grid-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.4;
+  margin: 0;
+  /* Strict 2-line clamp for uniform row heights */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* ── Row 2: footer — meta left, price right ── */
+
+.fav-grid-card__footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.fav-grid-card__meta {
+  font-size: 10px;
+  font-weight: 500;
+  color: #3F6212;
+  background: #F7FEE7;
+  border-radius: 6px;
+  padding: 1px 5px;
+  /* Single-line truncation to protect price from overflow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.fav-grid-card__price {
+  font-size: 10px;
+  font-weight: 700;
+  color: #D97706;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  border-radius: 9999px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 360px) {
+  .fav-grid-card {
+    width: 100%;
+  }
+
+  .fav-grid-card__title {
+    font-size: 12px;
+  }
+}

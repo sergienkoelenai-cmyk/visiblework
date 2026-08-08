@@ -8,6 +8,7 @@ export default function TaskList({
   tasks = [],
   users = [],
   categories = [],
+  activeUserId = '',
   baseRate = 0.10,
   complexityMultipliers = null,
   onCompleteTask,
@@ -21,9 +22,31 @@ export default function TaskList({
     setExpandedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
   };
 
+  // Helper: Is task favorited by active user?
+  const isTaskFavoriteForUser = React.useCallback((t) => {
+    if (!activeUserId) return !!t.isFavorite;
+    if (Array.isArray(t.favoritedBy)) {
+      return t.favoritedBy.includes(activeUserId);
+    }
+    return !!t.isFavorite;
+  }, [activeUserId]);
+
+  // Helper: Is task visible to active user?
+  const isTaskVisibleForUser = React.useCallback((t) => {
+    if (t.scope === 'personal') {
+      return !t.ownerId || t.ownerId === activeUserId;
+    }
+    return true;
+  }, [activeUserId]);
+
+  // Visible tasks for current user context
+  const visibleTasks = useMemo(() => {
+    return tasks.filter(isTaskVisibleForUser);
+  }, [tasks, isTaskVisibleForUser]);
+
   // Separate favorites
-  const favoriteTasks = showFavorites ? tasks.filter((t) => t.isFavorite) : [];
-  const regularTasks = showFavorites ? tasks.filter((t) => !t.isFavorite) : tasks;
+  const favoriteTasks = showFavorites ? visibleTasks.filter(isTaskFavoriteForUser) : [];
+  const regularTasks = showFavorites ? visibleTasks.filter((t) => !isTaskFavoriteForUser(t)) : visibleTasks;
 
   // Group regular tasks by category ID
   const groupedTasks = useMemo(() => {
@@ -61,7 +84,7 @@ export default function TaskList({
   }, [categories, groupedTasks, getCategoryDetails]);
 
   // Empty state
-  if (tasks.length === 0) {
+  if (visibleTasks.length === 0) {
     return (
       <div className="task-list task-list--empty">
         <div className="task-list__empty-state">

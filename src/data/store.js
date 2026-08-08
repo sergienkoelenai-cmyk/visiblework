@@ -25,6 +25,8 @@ import {
   Timestamp,
   runTransaction,
   increment,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 
 import { db, storage } from './firebase.js';
@@ -194,6 +196,9 @@ export async function addTask(data) {
     isActive: data.isActive !== undefined ? data.isActive : true,
     is_critical: data.is_critical !== undefined ? !!data.is_critical : false,
     nextDueDate: data.nextDueDate || null,
+    scope: data.scope || 'household',
+    ownerId: data.ownerId || data.createdBy || '',
+    favoritedBy: Array.isArray(data.favoritedBy) ? data.favoritedBy : (data.isFavorite && data.createdBy ? [data.createdBy] : []),
     lastCompletedAt: null,
     lastCompletedBy: null,
     createdBy: data.createdBy || '',
@@ -207,6 +212,26 @@ export async function addTask(data) {
 
   const ref = await addDoc(tasksCol, taskData);
   return ref.id;
+}
+
+/**
+ * Toggle a task favorite status for a specific user.
+ * @param {string} taskId
+ * @param {string} userId
+ * @param {boolean} isFavorite
+ */
+export async function toggleTaskFavorite(taskId, userId, isFavorite) {
+  if (!taskId || !userId) return;
+  const taskRef = doc(db, 'tasks', taskId);
+  if (isFavorite) {
+    await updateDoc(taskRef, {
+      favoritedBy: arrayUnion(userId),
+    });
+  } else {
+    await updateDoc(taskRef, {
+      favoritedBy: arrayRemove(userId),
+    });
+  }
 }
 
 /**

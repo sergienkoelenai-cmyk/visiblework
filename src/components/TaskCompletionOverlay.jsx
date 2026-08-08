@@ -8,6 +8,7 @@ import './TaskCompletionOverlay.css';
 export default function TaskCompletionOverlay({
   task,
   users = [],
+  activeUserId = '',
   baseRate = 0.10,
   complexityMultipliers = null,
   onConfirm,
@@ -17,7 +18,9 @@ export default function TaskCompletionOverlay({
 }) {
   const [confirmed, setConfirmed] = useState(false);
   const [isSplit, setIsSplit] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [selectedUserIds, setSelectedUserIds] = useState(
+    activeUserId && users.some((u) => u.id === activeUserId) ? [activeUserId] : []
+  );
   const [selectedModifierOption, setSelectedModifierOption] = useState(null); // null (none = 1) | 0.5 | 1.5 | 'CUSTOM'
   const [customMultiplierInput, setCustomMultiplierInput] = useState('1');
   const [dateOption, setDateOption] = useState('TODAY'); // TODAY | YESTERDAY | CUSTOM
@@ -25,7 +28,11 @@ export default function TaskCompletionOverlay({
     new Date().toISOString().slice(0, 10)
   );
   const [visible, setVisible] = useState(false);
-  const [isFav, setIsFav] = useState(task?.isFavorite || false);
+  const [isFav, setIsFav] = useState(
+    Array.isArray(task?.favoritedBy)
+      ? (activeUserId ? task.favoritedBy.includes(activeUserId) : task.favoritedBy.length > 0)
+      : !!task?.isFavorite
+  );
 
   // Trigger entrance animation
   useEffect(() => {

@@ -45,6 +45,11 @@ export default function FavoriteTaskCard({
       <div className="favorite-card__details">
         <span className="favorite-card__title" title={task.title}>
           {task.title}
+          {task.scope === 'personal' && (
+            <span style={{ marginLeft: '6px', fontSize: '10px', background: '#F3E8FF', color: '#7E22CE', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+              👤 Personal
+            </span>
+          )}
         </span>
         <span className="favorite-card__last-completed">
           Last completed: {relativeCompleted}

@@ -28,14 +28,21 @@ export default function TaskForm({
   baseRate = 0.10,
   complexityMultipliers = null,
   mode = 'simplified',
+  activeUser = null,
   onSave,
+  onDelete,
   onCancel,
 }) {
   const [visible, setVisible] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [showDescription, setShowDescription] = useState(false);
   const [category, setCategory] = useState('');
+
+  // Task scope: household vs personal
+  const [scope, setScope] = useState(task ? (task.scope || 'household') : 'household');
+  const [ownerId, setOwnerId] = useState(task ? (task.ownerId || '') : (activeUser?.id || ''));
 
   // Pricing state
   const [complexity, setComplexity] = useState(COMPLEXITY.LOW);
@@ -307,6 +314,8 @@ export default function TaskForm({
       type: computedType,
       is_one_off: isOneOff,
       allow_in_feats: allowInFeats,
+      scope,
+      ownerId: scope === 'personal' ? (ownerId || activeUser?.id || '') : '',
       icon: icon || null,
       isActive: true,
       is_critical: isCritical,
@@ -508,6 +517,34 @@ export default function TaskForm({
             </button>
           </div>
         )}
+
+        {/* 2.5 Task Scope: Household vs Personal */}
+        <div className="task-form__section">
+          <div className="task-form__section-label">TASK SCOPE</div>
+          <div className="task-form__segment-group task-form__segment-group--compact">
+            <button
+              type="button"
+              className={`task-form__segment-btn ${scope === 'household' ? 'task-form__segment-btn--active' : ''}`}
+              onClick={() => setScope('household')}
+            >
+              <span className="task-form__segment-emoji">🌐</span>
+              <span className="task-form__segment-label">Household</span>
+            </button>
+            <button
+              type="button"
+              className={`task-form__segment-btn ${scope === 'personal' ? 'task-form__segment-btn--active' : ''}`}
+              onClick={() => {
+                setScope('personal');
+                if (!ownerId && activeUser?.id) setOwnerId(activeUser.id);
+              }}
+            >
+              <span className="task-form__segment-emoji">👤</span>
+              <span className="task-form__segment-label">
+                Personal {activeUser?.name ? `(${activeUser.name})` : ''}
+              </span>
+            </button>
+          </div>
+        </div>
 
         {/* 3. Effort / Complexity Picker */}
         <div className="task-form__section">
@@ -1013,19 +1050,90 @@ export default function TaskForm({
         </div>
 
         {/* 6. Fixed Footer Actions */}
-        <div className="task-form__actions">
-          <button
-            type="button"
-            className="task-form__btn-cancel"
-            onClick={handleClose}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary task-form__btn-submit">
-            {task ? 'Save Changes' : 'Create Task'}
-          </button>
+        <div className="task-form__footer-stack">
+          <div className="task-form__actions">
+            <button
+              type="button"
+              className="task-form__btn-cancel"
+              onClick={handleClose}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary task-form__btn-submit">
+              {task ? 'Save Changes' : 'Create Task'}
+            </button>
+          </div>
+
+          {task && task.id && (
+            <button
+              type="button"
+              className="task-form__btn-delete-link"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete Task
+            </button>
+          )}
         </div>
       </form>
+
+      {/* Delete Confirmation Alert Modal */}
+      {showDeleteConfirm && (
+        <div
+          className="overlay-backdrop"
+          onClick={() => setShowDeleteConfirm(false)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              animation: 'scaleIn var(--transition-base) ease',
+              maxWidth: '380px',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              background: '#FFFFFF',
+              border: '1px solid #FFE4E6',
+              borderRadius: '20px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              ⚠️ Delete Task?
+            </h3>
+            
+            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.45', margin: 0 }}>
+              Are you sure you want to delete <strong style={{ color: '#0F172A' }}>"{task?.title || title}"</strong>? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowDeleteConfirm(false)} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px', borderRadius: '9999px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={async () => {
+                  if (task && task.id) {
+                    await onDelete?.(task.id);
+                  }
+                  setShowDeleteConfirm(false);
+                  onCancel?.();
+                }} 
+                type="button" 
+                style={{ padding: '8px 16px', minHeight: '38px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '9999px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
